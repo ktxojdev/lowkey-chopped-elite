@@ -7,17 +7,18 @@ import {
   Image as ImageIcon, 
   Plus, 
   Search, 
-  Monitor, 
   ChevronDown, 
   Loader2, 
   Bot, 
   User, 
   X, 
   BrainCircuit, 
-  ChevronRight,
+  Trash2,
   PanelLeftClose,
   PanelLeft,
-  Wand2
+  Wand2,
+  FileCode,
+  Paperclip
 } from "lucide-react";
 
 interface Message {
@@ -33,16 +34,19 @@ interface ChatSession {
   id: string;
   title: string;
   updatedAt: string;
+  messages: Message[];
 }
 
 const MODELS = [
   { id: "deepseek-v4", name: "DeepSeek V4 (Reasoning)" },
-  { id: "llama-3.3", name: "Llama 3.3 (Ollama Local)" },
-  { id: "vision-pro", name: "LCE Vision & Multimodal" },
-  { id: "image-gen", name: "Media Image Generator" },
+  { id: "llama-3.3", name: "Llama 3.3 (Adaptive Cloud/Local)" },
+  { id: "vision-pro", name: "Multimodal Vision Pro" },
+  { id: "image-gen", name: "Media Art Generator" },
 ];
 
 export default function AIPage() {
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -50,17 +54,34 @@ export default function AIPage() {
   const [showModelMenu, setShowModelMenu] = useState(false);
   const [thinkingEnabled, setThinkingEnabled] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [tokensUsed, setTokensUsed] = useState(16800);
-  const [maxTokens] = useState(60000);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [searchChats, setSearchChats] = useState("");
-  const [chatHistory, setChatHistory] = useState<ChatSession[]>([
-    { id: "1", title: "Game Architecture Analysis", updatedAt: "Today" },
-    { id: "2", title: "Next.js Route Proxies", updatedAt: "Yesterday" },
-  ]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Load chat history from localStorage
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("lce_ai_sessions");
+      if (saved) {
+        const parsed: ChatSession[] = JSON.parse(saved);
+        setSessions(parsed);
+        if (parsed.length > 0) {
+          setCurrentSessionId(parsed[0].id);
+          setMessages(parsed[0].messages);
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Save sessions to localStorage
+  const saveSessions = (updated: ChatSession[]) => {
+    setSessions(updated);
+    try {
+      localStorage.setItem("lce_ai_sessions", JSON.stringify(updated));
+    } catch {}
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -77,73 +98,139 @@ export default function AIPage() {
     reader.readAsDataURL(file);
   };
 
+  const startNewChat = () => {
+    const newId = Date.now().toString();
+    const newSession: ChatSession = {
+      id: newId,
+      title: "New Chat",
+      updatedAt: "Just now",
+      messages: [],
+    };
+    const updated = [newSession, ...sessions];
+    saveSessions(updated);
+    setCurrentSessionId(newId);
+    setMessages([]);
+    setInput("");
+    setSelectedImage(null);
+  };
+
+  const selectSession = (session: ChatSession) => {
+    setCurrentSessionId(session.id);
+    setMessages(session.messages);
+    setInput("");
+    setSelectedImage(null);
+  };
+
+  const deleteSession = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = sessions.filter((s) => s.id !== id);
+    saveSessions(updated);
+    if (currentSessionId === id) {
+      if (updated.length > 0) {
+        selectSession(updated[0]);
+      } else {
+        setCurrentSessionId(null);
+        setMessages([]);
+      }
+    }
+  };
+
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if ((!input.trim() && !selectedImage) || loading) return;
 
-    const currentInput = input;
+    const currentInput = input.trim();
     const currentImg = selectedImage;
 
-    const newMsg: Message = {
+    const userMsg: Message = {
       id: Date.now().toString(),
       role: "user",
       content: currentInput,
       image: currentImg || undefined,
     };
 
-    const updatedMessages = [...messages, newMsg];
-    setMessages(updatedMessages);
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
     setInput("");
     setSelectedImage(null);
     setLoading(true);
 
     try {
-      // If Image Generation mode is selected
+      let assistantMsg: Message;
+
       if (model.id === "image-gen") {
+        // In-chat generative image creation
         const res = await fetch("/api/ai/image-gen", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ prompt: currentInput }),
         });
         const data = await res.json();
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            role: "assistant",
-            content: `Generated artwork for prompt: "${currentInput}"`,
-            generatedImage: data.imageUrl,
-          },
-        ]);
-        setTokensUsed((t) => t + 120);
+        assistantMsg = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: `Generated artwork for prompt: "${currentInput}"`,
+          generatedImage: data.imageUrl,
+        };
       } else {
-        // Chat & Reasoning mode
+        // Chat & Reasoning
         const res = await fetch("/api/ai/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            messages: updatedMessages,
+            messages: newMessages,
             model: model.name,
             thinking: thinkingEnabled,
             image: currentImg,
           }),
         });
         const data = await res.json();
-
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: (Date.now() + 1).toString(),
-            role: "assistant",
-            content: data.reply || "No response received.",
-            thinking: data.thinkingProcess,
-          },
-        ]);
-
-        if (data.tokensUsed) {
-          setTokensUsed((t) => Math.min(maxTokens, t + data.tokensUsed));
-        }
+        assistantMsg = {
+          id: (Date.now() + 1).toString(),
+          role: "assistant",
+          content: data.reply || "No response received.",
+          thinking: data.thinkingProcess,
+        };
       }
+
+      const finalMessages = [...newMessages, assistantMsg];
+      setMessages(finalMessages);
+
+      // Persist in sessions
+      let activeId = currentSessionId;
+      if (!activeId) {
+        activeId = Date.now().toString();
+        setCurrentSessionId(activeId);
+      }
+
+      const title =
+        currentInput.length > 25
+          ? `${currentInput.slice(0, 25)}...`
+          : currentInput || "Discussion";
+
+      const existingIndex = sessions.findIndex((s) => s.id === activeId);
+      let updatedSessions: ChatSession[];
+
+      if (existingIndex >= 0) {
+        updatedSessions = [...sessions];
+        updatedSessions[existingIndex] = {
+          ...updatedSessions[existingIndex],
+          title: updatedSessions[existingIndex].title === "New Chat" ? title : updatedSessions[existingIndex].title,
+          updatedAt: "Just now",
+          messages: finalMessages,
+        };
+      } else {
+        updatedSessions = [
+          {
+            id: activeId,
+            title,
+            updatedAt: "Just now",
+            messages: finalMessages,
+          },
+          ...sessions,
+        ];
+      }
+      saveSessions(updatedSessions);
     } catch (err: any) {
       setMessages((prev) => [
         ...prev,
@@ -158,22 +245,9 @@ export default function AIPage() {
     }
   };
 
-  const startNewChat = () => {
-    if (messages.length > 0) {
-      const firstPrompt = messages[0].content.slice(0, 24) || "New Discussion";
-      setChatHistory((h) => [
-        { id: Date.now().toString(), title: firstPrompt, updatedAt: "Just now" },
-        ...h,
-      ]);
-    }
-    setMessages([]);
-    setInput("");
-    setSelectedImage(null);
-  };
-
   return (
     <div className="flex-1 flex w-full h-[calc(100vh-5rem)] overflow-hidden">
-      {/* Left Sidebar (Matches Screenshot 3) */}
+      {/* Left Sidebar */}
       <aside
         className={`${
           sidebarOpen ? "w-64" : "w-0 -ml-64"
@@ -184,7 +258,7 @@ export default function AIPage() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-purple-400" />
-              <span className="font-bold text-sm tracking-wide text-white">LCE AI</span>
+              <span className="font-bold text-sm tracking-wide text-white">ChoppedAI</span>
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -197,67 +271,79 @@ export default function AIPage() {
           {/* New Chat Button */}
           <button
             onClick={startNewChat}
-            className="w-full flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-semibold text-zinc-200 transition-all mb-3 shadow-sm"
+            className="w-full flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/30 text-xs font-semibold text-purple-200 hover:text-white transition-all mb-3 shadow-sm"
           >
             <Plus className="w-4 h-4 text-purple-400" />
             <span>New chat</span>
           </button>
 
           {/* Search Chats Input */}
-          <div className="relative mb-4">
+          <div className="relative mb-3">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-zinc-500" />
             <input
               type="text"
               value={searchChats}
               onChange={(e) => setSearchChats(e.target.value)}
-              placeholder="Search chats"
+              placeholder="Search chat history"
               className="w-full bg-[#141121] border border-white/5 rounded-lg pl-8 pr-3 py-1.5 text-xs text-zinc-300 placeholder-zinc-500 outline-none focus:border-purple-500/40"
             />
           </div>
 
-          {/* Share screen / Tools option */}
+          {/* Mode Shortcut */}
           <div
             onClick={() => setModel(MODELS[3])}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-white/5 cursor-pointer text-xs mb-4 transition-colors"
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-white/5 cursor-pointer text-xs mb-3 transition-colors"
           >
             <Wand2 className="w-3.5 h-3.5 text-purple-400" />
             <span>Generate Media Art</span>
           </div>
 
-          {/* Recent Chats */}
+          {/* Real Chats List from localStorage */}
           <div className="flex-1 overflow-y-auto min-h-0 space-y-1">
             <span className="block text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2 px-1">
-              Recent
+              Conversations
             </span>
-            {chatHistory
-              .filter((c) =>
-                c.title.toLowerCase().includes(searchChats.toLowerCase())
-              )
-              .map((chat) => (
-                <div
-                  key={chat.id}
-                  className="flex items-center justify-between px-3 py-2 rounded-lg text-xs text-zinc-400 hover:text-zinc-200 hover:bg-white/5 cursor-pointer truncate transition-colors"
-                >
-                  <span className="truncate">{chat.title}</span>
-                </div>
-              ))}
+            {sessions.length === 0 ? (
+              <p className="text-xs text-zinc-600 px-2 py-4 italic">No saved conversations yet.</p>
+            ) : (
+              sessions
+                .filter((s) =>
+                  s.title.toLowerCase().includes(searchChats.toLowerCase())
+                )
+                .map((session) => {
+                  const isCurrent = session.id === currentSessionId;
+                  return (
+                    <div
+                      key={session.id}
+                      onClick={() => selectSession(session)}
+                      className={`group flex items-center justify-between px-3 py-2 rounded-lg text-xs cursor-pointer truncate transition-colors ${
+                        isCurrent
+                          ? "bg-purple-600/20 text-white border border-purple-500/30"
+                          : "text-zinc-400 hover:text-zinc-200 hover:bg-white/5"
+                      }`}
+                    >
+                      <span className="truncate">{session.title}</span>
+                      <button
+                        onClick={(e) => deleteSession(session.id, e)}
+                        className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 transition-opacity"
+                        title="Delete chat"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  );
+                })
+            )}
           </div>
         </div>
 
-        {/* Bottom Tokens Counter (Matches Screenshot 3) */}
-        <div className="p-4 border-t border-white/5 bg-[#0e0c18]">
-          <div className="flex items-center justify-between text-[11px] mb-1.5">
-            <span className="text-zinc-400">Tokens today</span>
-            <span className="font-semibold text-zinc-200">
-              {(tokensUsed / 1000).toFixed(1)}k / {(maxTokens / 1000).toFixed(0)}k
-            </span>
-          </div>
-          <div className="w-full h-1.5 rounded-full bg-zinc-800 overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-300"
-              style={{ width: `${(tokensUsed / maxTokens) * 100}%` }}
-            />
-          </div>
+        {/* Real Status Footer */}
+        <div className="p-3 border-t border-white/5 bg-[#0e0c18] flex items-center justify-between text-[11px] text-zinc-500">
+          <span className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span>Adaptive Engine Online</span>
+          </span>
+          <span className="font-mono text-[10px]">LCE v2.0</span>
         </div>
       </aside>
 
@@ -276,13 +362,13 @@ export default function AIPage() {
         {/* Messages Scroll Area */}
         <div className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 space-y-6">
           {messages.length === 0 ? (
-            /* Centered Welcome Message (Matches Screenshot 3) */
+            /* Centered Welcome Message */
             <div className="h-full flex flex-col items-center justify-center text-center select-none -mt-10">
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-3">
+              <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-white mb-3">
                 What’s on your mind?
               </h2>
-              <p className="text-zinc-500 text-xs sm:text-sm max-w-md">
-                Chat with Ollama on your PC, analyze files with Vision, or generate images using LCE tools.
+              <p className="text-zinc-400 text-xs sm:text-sm max-w-md">
+                Chat with ChoppedAI, analyze multimodal files, or generate high-fidelity media art.
               </p>
             </div>
           ) : (
@@ -319,7 +405,7 @@ export default function AIPage() {
                       <details className="mb-3 rounded-lg bg-black/40 border border-purple-500/20 p-2.5 text-[11px] text-purple-300">
                         <summary className="cursor-pointer font-medium flex items-center gap-1.5 select-none text-purple-400">
                           <BrainCircuit className="w-3.5 h-3.5" />
-                          <span>Reasoning Process</span>
+                          <span>Reasoning Trace</span>
                         </summary>
                         <p className="mt-2 whitespace-pre-line text-zinc-400 font-mono text-[10px]">
                           {m.thinking}
@@ -356,7 +442,7 @@ export default function AIPage() {
                   </div>
                   <div className="rounded-2xl px-4 py-3 bg-[#141124] border border-white/10 text-zinc-400 text-xs flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
-                    <span>Analyzing context and synthesizing answer...</span>
+                    <span>Synthesizing response and executing kernel...</span>
                   </div>
                 </div>
               )}
@@ -365,43 +451,50 @@ export default function AIPage() {
           )}
         </div>
 
-        {/* Bottom Glowing Prompt Bar (Matches Screenshot 3) */}
-        <div className="p-4 sm:p-6 bg-gradient-to-t from-background via-background/90 to-transparent">
+        {/* Input Dock Area */}
+        <div className="p-4 sm:p-6 bg-gradient-to-t from-background via-background/95 to-transparent relative z-20">
           <form
             onSubmit={handleSend}
-            className="max-w-3xl mx-auto rounded-2xl bg-[#141024]/90 border border-white/10 focus-within:border-purple-500/50 shadow-2xl backdrop-blur-xl p-2.5 flex flex-col transition-all group shadow-purple-950/20"
+            className="max-w-3xl mx-auto bg-[#141026] border border-white/10 focus-within:border-purple-500/50 rounded-2xl shadow-2xl p-3 flex flex-col transition-all duration-200"
           >
-            {/* Image Preview Tag if selected */}
+            {/* Selected Image Preview Pill */}
             {selectedImage && (
-              <div className="relative inline-block mb-2 ml-2">
-                <img
-                  src={selectedImage}
-                  alt="Attachment"
-                  className="w-14 h-14 object-cover rounded-lg border border-purple-500/40 shadow-md"
-                />
+              <div className="flex items-center gap-2 mb-2 p-1.5 bg-black/40 rounded-lg w-max border border-white/10">
+                <img src={selectedImage} alt="Attachment" className="w-8 h-8 rounded object-cover" />
+                <span className="text-[11px] text-zinc-300">Image attached</span>
                 <button
                   type="button"
                   onClick={() => setSelectedImage(null)}
-                  className="absolute -top-1.5 -right-1.5 w-4 h-4 rounded-full bg-red-500 text-white flex items-center justify-center text-[10px]"
+                  className="text-zinc-500 hover:text-white p-1"
                 >
-                  <X className="w-2.5 h-2.5" />
+                  <X className="w-3.5 h-3.5" />
                 </button>
               </div>
             )}
 
-            {/* Input TextArea */}
-            <input
-              type="text"
+            {/* Textarea Input */}
+            <textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask anything..."
-              className="w-full bg-transparent border-none outline-none text-zinc-100 placeholder-zinc-500 text-sm sm:text-base px-3 py-2"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend(e);
+                }
+              }}
+              placeholder={
+                model.id === "image-gen"
+                  ? "Describe the visual scene to generate..."
+                  : "Ask anything, analyze data, brainstorm code..."
+              }
+              rows={2}
+              className="w-full bg-transparent resize-none border-none outline-none text-zinc-100 placeholder-zinc-500 text-xs sm:text-sm px-2 py-1"
             />
 
-            {/* Bottom Controls Bar */}
-            <div className="flex items-center justify-between pt-2 border-t border-white/5 mt-1 px-2">
-              <div className="flex items-center gap-2">
-                {/* Image / Vision Attachment Button */}
+            {/* Control Bar: Model, Thinking, Upload, Send */}
+            <div className="flex items-center justify-between pt-2 border-t border-white/5 mt-1 select-none">
+              <div className="flex items-center gap-2 relative">
+                {/* Upload File/Image */}
                 <input
                   type="file"
                   ref={fileInputRef}
@@ -412,66 +505,68 @@ export default function AIPage() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  title="Upload Image for Vision Analysis"
-                  className="p-1.5 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-white/5 transition-colors"
+                  className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-white/5 transition-colors"
+                  title="Upload image or document"
                 >
-                  <ImageIcon className="w-4 h-4" />
+                  <Paperclip className="w-4 h-4" />
                 </button>
 
-                {/* Model Selector Dropdown (Matches Screenshot 3) */}
+                {/* Model Selector Dropdown */}
                 <div className="relative">
                   <button
                     type="button"
                     onClick={() => setShowModelMenu(!showModelMenu)}
-                    className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-zinc-300 font-medium transition-all"
+                    className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-[11px] font-medium text-purple-300 transition-colors"
                   >
-                    <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                    <Sparkles className="w-3 h-3 text-purple-400" />
                     <span>{model.name}</span>
                     <ChevronDown className="w-3 h-3 text-zinc-500" />
                   </button>
 
                   {showModelMenu && (
-                    <div className="absolute bottom-full left-0 mb-2 w-56 rounded-xl bg-[#171329] border border-white/10 shadow-2xl p-1 z-50">
+                    <div className="absolute bottom-full mb-2 left-0 w-60 bg-[#17132b] border border-white/15 rounded-xl shadow-2xl p-1 z-50">
                       {MODELS.map((m) => (
-                        <div
+                        <button
                           key={m.id}
+                          type="button"
                           onClick={() => {
                             setModel(m);
                             setShowModelMenu(false);
                           }}
-                          className={`px-3 py-2 rounded-lg text-xs cursor-pointer flex items-center justify-between ${
+                          className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
                             model.id === m.id
-                              ? "bg-purple-600/30 text-purple-300 font-semibold"
-                              : "text-zinc-300 hover:bg-white/5"
+                              ? "bg-purple-600 text-white"
+                              : "text-zinc-300 hover:bg-white/5 hover:text-white"
                           }`}
                         >
-                          <span>{m.name}</span>
-                          {model.id === m.id && <Sparkles className="w-3 h-3 text-purple-400" />}
-                        </div>
+                          {m.name}
+                        </button>
                       ))}
                     </div>
                   )}
                 </div>
 
-                {/* Thinking Tag Toggle (Matches Screenshot 3) */}
-                <button
-                  type="button"
-                  onClick={() => setThinkingEnabled(!thinkingEnabled)}
-                  className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors ${
-                    thinkingEnabled
-                      ? "bg-purple-500/20 text-purple-300 border border-purple-500/30"
-                      : "bg-white/5 text-zinc-500"
-                  }`}
-                >
-                  Thinking
-                </button>
+                {/* Thinking Mode Toggle */}
+                {model.id !== "image-gen" && (
+                  <button
+                    type="button"
+                    onClick={() => setThinkingEnabled(!thinkingEnabled)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors border ${
+                      thinkingEnabled
+                        ? "bg-purple-600/30 border-purple-500/40 text-purple-300"
+                        : "bg-white/5 border-white/10 text-zinc-500 hover:text-zinc-300"
+                    }`}
+                  >
+                    Thinking
+                  </button>
+                )}
               </div>
 
-              {/* Submit Button (Purple circle with upward arrow - Matches Screenshot 3) */}
+              {/* Send Button */}
               <button
                 type="submit"
                 disabled={loading || (!input.trim() && !selectedImage)}
-                className="w-8 h-8 rounded-full bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:hover:bg-purple-600 text-white flex items-center justify-center shadow-lg shadow-purple-600/30 transition-all"
+                className="w-8 h-8 rounded-full bg-purple-600 hover:bg-purple-500 disabled:opacity-40 disabled:hover:bg-purple-600 flex items-center justify-center text-white transition-all shadow-md shadow-purple-600/30"
               >
                 <Send className="w-3.5 h-3.5" />
               </button>

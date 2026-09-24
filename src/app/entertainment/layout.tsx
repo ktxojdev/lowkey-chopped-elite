@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Film, Tv, PlaySquare, BookOpen, ScrollText } from "lucide-react";
+import { Film, Tv, PlaySquare, BookOpen } from "lucide-react";
 
 export default function EntertainmentLayout({
   children,
@@ -14,7 +14,6 @@ export default function EntertainmentLayout({
   const tabs = [
     { name: "Movies & TV", href: "/entertainment/movies", icon: Film },
     { name: "Anime", href: "/entertainment/anime", icon: PlaySquare },
-    { name: "Manga", href: "/entertainment/manga", icon: ScrollText },
     { name: "Books", href: "/entertainment/books", icon: BookOpen },
     { name: "Live TV", href: "/entertainment/live", icon: Tv },
   ];
