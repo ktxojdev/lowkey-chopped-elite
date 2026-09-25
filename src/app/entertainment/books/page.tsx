@@ -57,10 +57,10 @@ export default function BooksPage() {
   };
 
   const getCover = (coverId?: number) => {
-    if (coverId) {
-      return `https://covers.openlibrary.org/b/id/${coverId}-M.jpg`;
+    if (coverId && coverId > 0) {
+      return `https://covers.openlibrary.org/b/id/${coverId}-L.jpg`;
     }
-    return "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=400&q=80";
+    return null;
   };
 
   return (
@@ -121,21 +121,40 @@ export default function BooksPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {books.map((book) => {
             const author = book.author_name?.[0] || "Unknown Author";
+            const coverUrl = getCover(book.cover_i);
+
             return (
               <div
                 key={book.key}
                 onClick={() => setSelectedBook(book)}
                 className="group relative bg-[#130f22] border border-white/5 hover:border-purple-500/40 rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-900/20 flex flex-col"
               >
-                <div className="relative w-full aspect-[2/3] bg-[#0b0814] overflow-hidden">
-                  <img
-                    src={getCover(book.cover_i)}
-                    alt={book.title}
-                    loading="lazy"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
+                <div className="relative w-full aspect-[2/3] bg-[#0e0a1a] overflow-hidden">
+                  {coverUrl ? (
+                    <img
+                      src={coverUrl}
+                      alt={book.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
+                      onError={(e) => {
+                        (e.target as HTMLElement).style.display = "none";
+                      }}
+                    />
+                  ) : (
+                    <div className="w-full h-full p-4 flex flex-col justify-between bg-gradient-to-br from-[#1d163a] via-[#140e2b] to-[#0d091a] border border-white/5">
+                      <div className="w-8 h-8 rounded-lg bg-purple-500/20 border border-purple-500/30 flex items-center justify-center text-purple-400">
+                        <BookOpen className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-white line-clamp-3 leading-snug">{book.title}</h4>
+                        <p className="text-[10px] text-zinc-400 mt-1 line-clamp-1">{author}</p>
+                      </div>
+                      <div className="w-full h-0.5 bg-purple-500/30 rounded-full" />
+                    </div>
+                  )}
+
                   {book.first_publish_year && (
-                    <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-[10px] font-semibold text-zinc-300 border border-white/10">
+                    <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-black/70 backdrop-blur-md text-[10px] font-semibold text-zinc-300 border border-white/10 z-10">
                       {book.first_publish_year}
                     </span>
                   )}
@@ -173,11 +192,19 @@ export default function BooksPage() {
             </button>
 
             <div className="flex flex-col sm:flex-row gap-5">
-              <img
-                src={getCover(selectedBook.cover_i)}
-                alt={selectedBook.title}
-                className="w-32 sm:w-40 aspect-[2/3] object-cover rounded-xl shadow-xl shrink-0 self-center sm:self-start"
-              />
+              {getCover(selectedBook.cover_i) ? (
+                <img
+                  src={getCover(selectedBook.cover_i)!}
+                  alt={selectedBook.title}
+                  className="w-32 sm:w-40 aspect-[2/3] object-cover rounded-xl shadow-xl shrink-0 self-center sm:self-start border border-white/10"
+                />
+              ) : (
+                <div className="w-32 sm:w-40 aspect-[2/3] rounded-xl shadow-xl shrink-0 self-center sm:self-start p-4 flex flex-col justify-between bg-gradient-to-br from-[#241a4a] via-[#16102f] to-[#0c0817] border border-white/10">
+                  <BookOpen className="w-6 h-6 text-purple-400" />
+                  <span className="text-xs font-bold text-white leading-tight">{selectedBook.title}</span>
+                  <span className="text-[10px] text-zinc-400">{selectedBook.author_name?.[0] || ""}</span>
+                </div>
+              )}
               <div className="flex-1">
                 <h2 className="text-xl font-bold text-white">{selectedBook.title}</h2>
                 <div className="flex items-center gap-2 text-xs text-zinc-400 mt-2">

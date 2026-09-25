@@ -25,6 +25,7 @@ export default function LiveTVPage() {
   const [loading, setLoading] = useState(true);
   const [playerKey, setPlayerKey] = useState(0);
   const playerContainerRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     fetch("/api/entertainment/livetv")
@@ -41,6 +42,35 @@ export default function LiveTVPage() {
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
   }, []);
+
+  // HLS.js streaming support for m3u8 in non-Safari browsers
+  useEffect(() => {
+    if (!activeChannel || !videoRef.current) return;
+    if (activeChannel.embedType === "hls") {
+      let hlsInstance: any = null;
+      import("hls.js").then(({ default: Hls }) => {
+        if (Hls.isSupported() && videoRef.current) {
+          hlsInstance = new Hls({
+            enableWorker: true,
+            lowLatencyMode: true,
+          });
+          hlsInstance.loadSource(activeChannel.streamUrl);
+          hlsInstance.attachMedia(videoRef.current);
+          hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+            videoRef.current?.play().catch(() => {});
+          });
+        } else if (videoRef.current?.canPlayType("application/vnd.apple.mpegurl")) {
+          videoRef.current.src = activeChannel.streamUrl;
+          videoRef.current.play().catch(() => {});
+        }
+      });
+      return () => {
+        if (hlsInstance) {
+          hlsInstance.destroy();
+        }
+      };
+    }
+  }, [activeChannel, playerKey]);
 
   const filteredChannels = useMemo(() => {
     return channels.filter((ch) => {
@@ -93,10 +123,10 @@ export default function LiveTVPage() {
       {activeChannel && (
         <div 
           ref={playerContainerRef}
-          className="bg-[#110d21] border border-amber-500/30 rounded-2xl overflow-hidden shadow-2xl flex flex-col"
+          className="bg-[#110d21] border border-amber-500/30 rounded-2xl overflow-hidden shadow-2xl flex flex-col max-w-5xl mx-auto w-full"
         >
           {/* Stream Screen */}
-          <div className="relative w-full aspect-video bg-black flex items-center justify-center overflow-hidden">
+          <div className="relative w-full h-[300px] sm:h-[420px] md:h-[460px] bg-black flex items-center justify-center overflow-hidden">
             {activeChannel.embedType === "youtube" || activeChannel.embedType === "iframe" ? (
               <iframe
                 key={`${activeChannel.id}-${playerKey}`}
@@ -108,11 +138,13 @@ export default function LiveTVPage() {
               />
             ) : (
               <video
+                ref={videoRef}
                 key={`${activeChannel.id}-${playerKey}`}
-                src={activeChannel.streamUrl}
                 controls
                 autoPlay
-                className="w-full h-full object-contain"
+                muted
+                playsInline
+                className="w-full h-full object-contain bg-black"
               />
             )}
           </div>

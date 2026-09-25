@@ -15,7 +15,10 @@ import {
   Check, 
   Sparkles,
   Sliders,
-  Tv
+  Tv,
+  Heart,
+  Users,
+  Code2
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Slider } from "@/components/ui/slider";
@@ -45,7 +48,7 @@ export default function SettingsPage() {
   // AI Settings
   const [ollamaUrl, setOllamaUrl] = useState("http://127.0.0.1:11434");
   const [aiTemperature, setAiTemperature] = useState(0.7);
-  const [aiModel, setAiModel] = useState("deepseek-v4");
+  const [aiModel, setAiModel] = useState("standard");
 
   // Audio Settings
   const [masterVolume, setMasterVolume] = useState(85);
@@ -53,9 +56,13 @@ export default function SettingsPage() {
 
   // State feedback
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [tabCloak, setTabCloak] = useState("default");
 
   useEffect(() => {
     try {
+      const savedCloak = localStorage.getItem("lce_tab_cloak");
+      if (savedCloak) setTabCloak(savedCloak);
+
       const saved = localStorage.getItem("lce_user_settings");
       if (saved) {
         const parsed = JSON.parse(saved);
@@ -73,6 +80,14 @@ export default function SettingsPage() {
       }
     } catch {}
   }, []);
+
+  const handleCloakChange = (preset: string) => {
+    setTabCloak(preset);
+    try {
+      localStorage.setItem("lce_tab_cloak", preset);
+      window.dispatchEvent(new CustomEvent("lce-cloak-change"));
+    } catch {}
+  };
 
   const handleSave = () => {
     const config = {
@@ -148,6 +163,50 @@ export default function SettingsPage() {
             </>
           )}
         </Button>
+      </div>
+
+      {/* Section 0: Tab Disguise & School Stealth */}
+      <div className="bg-[#120e24] border border-white/10 rounded-2xl p-6 shadow-xl space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-white/5">
+          <div className="flex items-center gap-2.5">
+            <ShieldCheck className="w-5 h-5 text-emerald-400" />
+            <h2 className="text-base font-bold text-white">Tab Disguise & School Stealth</h2>
+          </div>
+          <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full">
+            Innocent Mode
+          </span>
+        </div>
+
+        <p className="text-xs text-zinc-400 leading-relaxed">
+          Disguise this browser tab's title and favicon to look like normal school work so automated filters and screen monitors won't flag you.
+        </p>
+
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 pt-1">
+          {[
+            { id: "default", name: "Portal (Clean)", sub: "Portal | Workspace" },
+            { id: "classroom", name: "Classroom", sub: "Classes" },
+            { id: "docs", name: "Google Docs", sub: "Untitled document" },
+            { id: "drive", name: "Google Drive", sub: "My Drive" },
+            { id: "canvas", name: "Canvas LMS", sub: "Dashboard" },
+          ].map((item) => (
+            <button
+              key={item.id}
+              onClick={() => handleCloakChange(item.id)}
+              className={`p-3 rounded-xl border text-left transition-all ${
+                tabCloak === item.id
+                  ? "bg-purple-950/40 border-purple-500 text-white shadow-md shadow-purple-950/30"
+                  : "bg-white/5 border-white/5 text-zinc-400 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              <p className="font-semibold text-xs text-zinc-200">{item.name}</p>
+              <p className="text-[10px] text-zinc-500 truncate mt-0.5">{item.sub}</p>
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between pt-2 text-[11px] text-zinc-500 border-t border-white/5">
+          <span>Quick Panic Key: Press <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 font-mono">`</kbd> (tilde) or tap <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 border border-zinc-700 text-zinc-300 font-mono">Esc</kbd> 3x to instantly jump to Classroom.</span>
+        </div>
       </div>
 
       {/* Section 1: Appearance & Accent */}
@@ -249,7 +308,7 @@ export default function SettingsPage() {
       <div className="bg-[#120e24] border border-white/10 rounded-2xl p-6 shadow-xl space-y-5">
         <div className="flex items-center gap-2.5 pb-3 border-b border-white/5">
           <Bot className="w-5 h-5 text-indigo-400" />
-          <h2 className="text-base font-bold text-white">ChoppedAI Kernel Configuration</h2>
+          <h2 className="text-base font-bold text-white">ChoppedAI Assistant Settings</h2>
         </div>
 
         <div>
@@ -267,7 +326,7 @@ export default function SettingsPage() {
 
         <div>
           <div className="flex items-center justify-between text-xs mb-2">
-            <span className="font-medium text-zinc-300">Reasoning Creativity (Temperature)</span>
+            <span className="font-medium text-zinc-300">Response Creativity (Temperature)</span>
             <span className="font-mono text-purple-400 font-bold">{aiTemperature.toFixed(2)}</span>
           </div>
           <Slider
@@ -344,6 +403,79 @@ export default function SettingsPage() {
             <Trash2 className="w-4 h-4" />
             <span>Clear Local Storage</span>
           </Button>
+        </div>
+      </div>
+
+      {/* Section 6: Credits & Contributors */}
+      <div id="credits" className="bg-[#120e24] border border-white/10 rounded-2xl p-6 shadow-xl space-y-5">
+        <div className="flex items-center justify-between pb-3 border-b border-white/5">
+          <div className="flex items-center gap-2.5">
+            <Heart className="w-5 h-5 text-rose-400" />
+            <h2 className="text-base font-bold text-white">Credits & Contributors</h2>
+          </div>
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 rounded-full">
+            Team
+          </span>
+        </div>
+
+        {/* Contributors Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {/* turg */}
+          <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-white/[0.03] border border-white/10 hover:border-purple-500/40 hover:bg-white/[0.05] transition-all">
+            <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-purple-500/30 bg-black/40">
+              <img src="/credits/turg.png" alt="turg" className="w-full h-full object-cover" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-bold text-sm text-white truncate">turg</h3>
+              <span className="inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                Founder
+              </span>
+            </div>
+          </div>
+
+          {/* c2x86 */}
+          <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-white/[0.03] border border-white/10 hover:border-blue-500/40 hover:bg-white/[0.05] transition-all">
+            <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-blue-500/30 bg-black/40">
+              <img src="/credits/c2x86.png" alt="c2x86" className="w-full h-full object-cover" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-bold text-sm text-white truncate">c2x86</h3>
+              <span className="inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-500/15 text-blue-400 border border-blue-500/30">
+                Main Dev
+              </span>
+            </div>
+          </div>
+
+          {/* fanu lanoue */}
+          <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-white/[0.03] border border-white/10 hover:border-pink-500/40 hover:bg-white/[0.05] transition-all">
+            <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-pink-500/30 bg-black/40">
+              <img src="/credits/fanu.png" alt="fanu lanoue" className="w-full h-full object-cover" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-bold text-sm text-white truncate">fanu lanoue</h3>
+              <span className="inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] font-semibold bg-pink-500/15 text-pink-400 border border-pink-500/30">
+                Assistant Dev
+              </span>
+            </div>
+          </div>
+
+          {/* sharwie */}
+          <div className="flex items-center gap-3.5 p-3.5 rounded-xl bg-white/[0.03] border border-white/10 hover:border-purple-500/40 hover:bg-white/[0.05] transition-all">
+            <div className="w-12 h-12 rounded-xl overflow-hidden shrink-0 border border-purple-500/30 bg-black/40">
+              <img src="/credits/sharwie.png" alt="sharwie" className="w-full h-full object-cover" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="font-bold text-sm text-white truncate">sharwie</h3>
+              <span className="inline-block mt-0.5 px-2 py-0.5 rounded text-[10px] font-semibold bg-purple-500/15 text-purple-400 border border-purple-500/30">
+                Contributor
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Supporting Open Source Attribution */}
+        <div className="pt-2 border-t border-white/5 flex flex-wrap items-center justify-between gap-3 text-[11px] text-zinc-500">
+          <span>Special thanks to GN-Math, TMDB, v86, and OpenLibrary for open-source catalog assets.</span>
         </div>
       </div>
     </div>

@@ -5,11 +5,17 @@ import Navbar from "@/components/layout/Navbar";
 import BackgroundAura from "@/components/layout/BackgroundAura";
 import { CommandMenu } from "@/components/search/CommandMenu";
 
+import TabCloakProvider from "@/components/layout/TabCloakProvider";
+
 export const metadata: Metadata = {
-  title: "Lowkey Chopped Elite | LCE",
-  description: "Next-generation hub for Activities, AI, Entertainment, VM, and Soundboard.",
+  title: "Portal | Workspace",
+  description: "Unified productivity workspace for activities, learning tools, media, and development.",
   icons: {
-    icon: "/favicon.ico",
+    icon: [
+      { url: "/icon.png", type: "image/png" },
+      { url: "/favicon.ico", sizes: "32x32" },
+    ],
+    apple: "/apple-icon.png",
   },
 };
 
@@ -21,6 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`dark ${GeistSans.variable}`}>
       <body className={`${GeistSans.className} bg-background text-zinc-100 min-h-screen flex flex-col antialiased selection:bg-purple-500/30 selection:text-purple-200 font-sans`}>
+        <TabCloakProvider />
         <BackgroundAura />
         <Navbar />
         <CommandMenu />

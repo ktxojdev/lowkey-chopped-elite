@@ -12,11 +12,9 @@ import {
   Bot, 
   User, 
   X, 
-  BrainCircuit, 
   Trash2,
   PanelLeftClose,
   PanelLeft,
-  Wand2,
   FileCode,
   Paperclip
 } from "lucide-react";
@@ -38,10 +36,9 @@ interface ChatSession {
 }
 
 const MODELS = [
-  { id: "deepseek-v4", name: "DeepSeek V4 (Reasoning)" },
-  { id: "llama-3.3", name: "Llama 3.3 (Adaptive Cloud/Local)" },
-  { id: "vision-pro", name: "Multimodal Vision Pro" },
-  { id: "image-gen", name: "Media Art Generator" },
+  { id: "standard", name: "ChoppedAI Standard (Fast)" },
+  { id: "deepseek-r1", name: "DeepSeek R1 (Reasoning)" },
+  { id: "llama-3.3", name: "Llama 3.3 (General)" },
 ];
 
 export default function AIPage() {
@@ -52,7 +49,6 @@ export default function AIPage() {
   const [loading, setLoading] = useState(false);
   const [model, setModel] = useState(MODELS[0]);
   const [showModelMenu, setShowModelMenu] = useState(false);
-  const [thinkingEnabled, setThinkingEnabled] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [searchChats, setSearchChats] = useState("");
@@ -156,42 +152,21 @@ export default function AIPage() {
     setLoading(true);
 
     try {
-      let assistantMsg: Message;
-
-      if (model.id === "image-gen") {
-        // In-chat generative image creation
-        const res = await fetch("/api/ai/image-gen", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: currentInput }),
-        });
-        const data = await res.json();
-        assistantMsg = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: `Generated artwork for prompt: "${currentInput}"`,
-          generatedImage: data.imageUrl,
-        };
-      } else {
-        // Chat & Reasoning
-        const res = await fetch("/api/ai/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            messages: newMessages,
-            model: model.name,
-            thinking: thinkingEnabled,
-            image: currentImg,
-          }),
-        });
-        const data = await res.json();
-        assistantMsg = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: data.reply || "No response received.",
-          thinking: data.thinkingProcess,
-        };
-      }
+      const res = await fetch("/api/ai/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages: newMessages,
+          model: model.name,
+          image: currentImg,
+        }),
+      });
+      const data = await res.json();
+      const assistantMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content: data.reply || "No response received.",
+      };
 
       const finalMessages = [...newMessages, assistantMsg];
       setMessages(finalMessages);
@@ -289,14 +264,6 @@ export default function AIPage() {
             />
           </div>
 
-          {/* Mode Shortcut */}
-          <div
-            onClick={() => setModel(MODELS[3])}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-zinc-400 hover:text-zinc-200 hover:bg-white/5 cursor-pointer text-xs mb-3 transition-colors"
-          >
-            <Wand2 className="w-3.5 h-3.5 text-purple-400" />
-            <span>Generate Media Art</span>
-          </div>
 
           {/* Real Chats List from localStorage */}
           <div className="flex-1 overflow-y-auto min-h-0 space-y-1">
@@ -368,7 +335,7 @@ export default function AIPage() {
                 What’s on your mind?
               </h2>
               <p className="text-zinc-400 text-xs sm:text-sm max-w-md">
-                Chat with ChoppedAI, analyze multimodal files, or generate high-fidelity media art.
+                Chat with ChoppedAI, analyze multimodal files, explore code, and synthesize insights.
               </p>
             </div>
           ) : (
@@ -400,19 +367,6 @@ export default function AIPage() {
                       </div>
                     )}
 
-                    {/* Thinking Accordion */}
-                    {m.thinking && (
-                      <details className="mb-3 rounded-lg bg-black/40 border border-purple-500/20 p-2.5 text-[11px] text-purple-300">
-                        <summary className="cursor-pointer font-medium flex items-center gap-1.5 select-none text-purple-400">
-                          <BrainCircuit className="w-3.5 h-3.5" />
-                          <span>Reasoning Trace</span>
-                        </summary>
-                        <p className="mt-2 whitespace-pre-line text-zinc-400 font-mono text-[10px]">
-                          {m.thinking}
-                        </p>
-                      </details>
-                    )}
-
                     <div className="whitespace-pre-wrap">{m.content}</div>
 
                     {/* AI Generated Image */}
@@ -442,7 +396,7 @@ export default function AIPage() {
                   </div>
                   <div className="rounded-2xl px-4 py-3 bg-[#141124] border border-white/10 text-zinc-400 text-xs flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
-                    <span>Synthesizing response and executing kernel...</span>
+                    <span>Thinking...</span>
                   </div>
                 </div>
               )}
@@ -482,11 +436,7 @@ export default function AIPage() {
                   handleSend(e);
                 }
               }}
-              placeholder={
-                model.id === "image-gen"
-                  ? "Describe the visual scene to generate..."
-                  : "Ask anything, analyze data, brainstorm code..."
-              }
+              placeholder="Ask anything, analyze data, brainstorm code..."
               rows={2}
               className="w-full bg-transparent resize-none border-none outline-none text-zinc-100 placeholder-zinc-500 text-xs sm:text-sm px-2 py-1"
             />
@@ -545,21 +495,6 @@ export default function AIPage() {
                     </div>
                   )}
                 </div>
-
-                {/* Thinking Mode Toggle */}
-                {model.id !== "image-gen" && (
-                  <button
-                    type="button"
-                    onClick={() => setThinkingEnabled(!thinkingEnabled)}
-                    className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-colors border ${
-                      thinkingEnabled
-                        ? "bg-purple-600/30 border-purple-500/40 text-purple-300"
-                        : "bg-white/5 border-white/10 text-zinc-500 hover:text-zinc-300"
-                    }`}
-                  >
-                    Thinking
-                  </button>
-                )}
               </div>
 
               {/* Send Button */}

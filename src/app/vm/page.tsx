@@ -1,104 +1,34 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef } from "react";
 import { 
   Terminal as TerminalIcon, 
-  Play, 
   RotateCw, 
   Maximize2, 
   Cpu, 
-  HardDrive, 
   ExternalLink,
   ShieldCheck,
-  Power,
-  Layers,
-  Settings
+  Power
 } from "lucide-react";
 
 export default function VMPage() {
-  const [vmActive, setVmActive] = useState(true);
   const [vmKey, setVmKey] = useState(0);
-  const [selectedOS, setSelectedOS] = useState<"v86-linux" | "jslinux" | "wasm-terminal">("v86-linux");
-  const [fullscreen, setFullscreen] = useState(false);
+  const [selectedOS, setSelectedOS] = useState<"v86-linux" | "jslinux" | "freedos">("v86-linux");
   const containerRef = useRef<HTMLDivElement>(null);
-
-  // Terminal commands interactive state
-  const [termOutput, setTermOutput] = useState<string[]>([
-    "LCE WebAssembly Hypervisor v2.4 (x86_64 WASM)",
-    "Initializing sandboxed WebAssembly memory segment: 512 MB...",
-    "Mounting virtual rootfs (ext2 virtual disk)...",
-    "Security sandbox: Enabled (Origin-isolated, No-leakage)",
-    "Type 'help' to view available VM utilities.",
-    "",
-  ]);
-  const [termInput, setTermInput] = useState("");
-  const termEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    termEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [termOutput]);
-
-  const handleCommand = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!termInput.trim()) return;
-
-    const cmd = termInput.trim();
-    const args = cmd.split(" ");
-    const base = args[0].toLowerCase();
-
-    let reply = "";
-    switch (base) {
-      case "help":
-        reply = "Available commands: help, uname, neofetch, ls, date, clear, echo, top, lce, whoami";
-        break;
-      case "uname":
-        reply = "Linux lce-wasm-node 6.6.0-wasm-virt #1 SMP PREEMPT x86_64 GNU/Linux";
-        break;
-      case "neofetch":
-        reply = `   .-.       OS: Lowkey Chopped Elite WASM Linux\n  oo|        Kernel: 6.6.0-lce-wasm\n /` + `''` + `\\       Uptime: 42 mins\n(\\   /)      Packages: 420 (wasm-pkgs)\n \`~.~'       Memory: 184MB / 512MB (WASM Isolated)\n             Architecture: x86 / RISC-V Hybrid`;
-        break;
-      case "ls":
-        reply = "bin   dev   etc   home   lib   proc   root   sys   tmp   usr   var";
-        break;
-      case "whoami":
-        reply = "root (lce-guest-sandbox)";
-        break;
-      case "date":
-        reply = new Date().toUTCString();
-        break;
-      case "top":
-        reply = "Tasks: 12 total, 1 running, 11 sleeping | CPU: 0.8% | Mem: 35.8% used";
-        break;
-      case "lce":
-        reply = "Lowkey Chopped Elite (LCE) - Hypervisor active and proxied.";
-        break;
-      case "clear":
-        setTermOutput([]);
-        setTermInput("");
-        return;
-      default:
-        reply = `bash: command not found: ${base}. Type 'help' for commands.`;
-    }
-
-    setTermOutput((prev) => [...prev, `$ ${cmd}`, reply, ""]);
-    setTermInput("");
-  };
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
       containerRef.current?.requestFullscreen?.();
-      setFullscreen(true);
     } else {
       document.exitFullscreen?.();
-      setFullscreen(false);
     }
   };
 
-  // VM embed URLs
+  // Real WebAssembly VMs proxied through serverside backend
   const osFrames = {
-    "v86-linux": "https://copy.sh/v86/?profile=linux26",
+    "v86-linux": "/api/vm/proxy?profile=linux26",
     "jslinux": "https://bellard.org/jslinux/vm.html?url=alpine-x86.cfg&mem=256",
-    "wasm-terminal": "internal",
+    "freedos": "/api/vm/proxy?profile=freedos",
   };
 
   return (
@@ -111,18 +41,18 @@ export default function VMPage() {
             <h1 className="text-3xl md:text-4xl font-black text-white tracking-tight">Cloud VM</h1>
           </div>
           <p className="text-zinc-400 text-xs md:text-sm mt-0.5">
-            Run an isolated WebAssembly Linux virtual machine directly in your browser.
+            Run real WebAssembly Linux and FreeDOS virtual machines with full root access in your browser.
           </p>
         </div>
 
         {/* Status Indicators */}
         <div className="flex items-center gap-2 bg-[#130f24] border border-white/10 px-4 py-2 rounded-xl text-xs text-zinc-300">
           <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-          <span className="font-semibold text-white">WASM Kernel:</span>
-          <span className="text-cyan-300">Active</span>
+          <span className="font-semibold text-white">WASM Emulator:</span>
+          <span className="text-cyan-300">Online</span>
           <span className="text-zinc-600">|</span>
           <Cpu className="w-3.5 h-3.5 text-zinc-400" />
-          <span className="text-zinc-400">512MB RAM</span>
+          <span className="text-zinc-400">Isolated Sandbox</span>
         </div>
       </div>
 
@@ -150,7 +80,7 @@ export default function VMPage() {
                     : "text-zinc-400 hover:text-white"
                 }`}
               >
-                v86 Linux WASM
+                v86 Linux (x86)
               </button>
               <button
                 onClick={() => setSelectedOS("jslinux")}
@@ -160,17 +90,17 @@ export default function VMPage() {
                     : "text-zinc-400 hover:text-white"
                 }`}
               >
-                Alpine Linux
+                Alpine Linux (JSLinux)
               </button>
               <button
-                onClick={() => setSelectedOS("wasm-terminal")}
+                onClick={() => setSelectedOS("freedos")}
                 className={`px-2.5 py-1 rounded text-xs font-medium transition-colors ${
-                  selectedOS === "wasm-terminal"
+                  selectedOS === "freedos"
                     ? "bg-cyan-600 text-white"
                     : "text-zinc-400 hover:text-white"
                 }`}
               >
-                LCE Shell
+                FreeDOS (x86)
               </button>
             </div>
           </div>
@@ -198,41 +128,47 @@ export default function VMPage() {
 
         {/* VM Sandbox Display */}
         <div className="flex-1 w-full h-full bg-black relative overflow-hidden">
-          {selectedOS === "wasm-terminal" ? (
-            /* Interactive WebAssembly Shell Terminal */
-            <div className="w-full h-full p-4 font-mono text-xs text-green-400 overflow-y-auto flex flex-col justify-between">
-              <div className="space-y-1">
-                {termOutput.map((line, i) => (
-                  <div key={i} className="whitespace-pre-wrap leading-relaxed">
-                    {line}
-                  </div>
-                ))}
-                <div ref={termEndRef} />
-              </div>
+          <iframe
+            key={`${selectedOS}-${vmKey}`}
+            src={osFrames[selectedOS]}
+            className="w-full h-full border-none"
+            allow="autoplay; fullscreen; clipboard-read; clipboard-write; keyboard-map"
+            sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-downloads"
+            title="Real WebAssembly Virtual Machine"
+          />
+        </div>
+      </div>
 
-              <form onSubmit={handleCommand} className="flex items-center gap-2 mt-4 pt-2 border-t border-white/10">
-                <span className="text-cyan-400 font-bold">root@lce-wasm:~#</span>
-                <input
-                  type="text"
-                  value={termInput}
-                  onChange={(e) => setTermInput(e.target.value)}
-                  placeholder="type a command (help, neofetch, ls, whoami)..."
-                  className="bg-transparent border-none outline-none text-white w-full font-mono text-xs placeholder-zinc-600"
-                  autoFocus
-                />
-              </form>
-            </div>
-          ) : (
-            /* Embedded x86/RISC-V WebAssembly Container */
-            <iframe
-              key={`${selectedOS}-${vmKey}`}
-              src={osFrames[selectedOS]}
-              title="LCE WebAssembly Virtual Machine"
-              className="w-full h-full border-none"
-              allow="autoplay; fullscreen; clipboard-read; clipboard-write"
-              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-            />
-          )}
+      {/* Info & Specs Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-[#120e24] border border-white/10 rounded-xl p-4 flex items-start gap-3">
+          <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+          <div>
+            <h4 className="text-xs font-bold text-white">Client-Side Isolation</h4>
+            <p className="text-[11px] text-zinc-400 mt-0.5">
+              Code and filesystem execute entirely in a WebAssembly sandbox inside your browser with zero leakage.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-[#120e24] border border-white/10 rounded-xl p-4 flex items-start gap-3">
+          <Cpu className="w-5 h-5 text-cyan-400 shrink-0 mt-0.5" />
+          <div>
+            <h4 className="text-xs font-bold text-white">Real x86 Instruction Set</h4>
+            <p className="text-[11px] text-zinc-400 mt-0.5">
+              Accurately emulates an x86 processor running authentic Linux kernels, compilers, and utilities.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-[#120e24] border border-white/10 rounded-xl p-4 flex items-start gap-3">
+          <Power className="w-5 h-5 text-purple-400 shrink-0 mt-0.5" />
+          <div>
+            <h4 className="text-xs font-bold text-white">Proxied Backend Assets</h4>
+            <p className="text-[11px] text-zinc-400 mt-0.5">
+              All BIOS, WASM runtimes, and disk images are fetched through the LCE server-side proxy on Vercel.
+            </p>
+          </div>
         </div>
       </div>
     </div>

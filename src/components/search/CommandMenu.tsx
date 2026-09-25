@@ -15,6 +15,7 @@ import {
   Search,
   Sparkles,
   ExternalLink,
+  Heart,
 } from "lucide-react";
 import {
   CommandDialog,
@@ -132,6 +133,13 @@ export function CommandMenu() {
           >
             <Settings className="mr-2 h-4 w-4 text-zinc-400" />
             <span>Settings & Preferences</span>
+          </CommandItem>
+          <CommandItem
+            onSelect={() => runCommand(() => router.push("/settings#credits"))}
+            className="cursor-pointer"
+          >
+            <Heart className="mr-2 h-4 w-4 text-rose-400" />
+            <span>Credits & Contributors (turg, c2x86, fanu, sharwie)</span>
           </CommandItem>
         </CommandGroup>
 

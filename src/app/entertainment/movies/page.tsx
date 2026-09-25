@@ -72,6 +72,7 @@ export default function MoviesPage() {
   
   // Streaming Player state
   const [isStreaming, setIsStreaming] = useState(false);
+  const [selectedServer, setSelectedServer] = useState("cinesrc");
   const [season, setSeason] = useState(1);
   const [episode, setEpisode] = useState(1);
   const [playerKey, setPlayerKey] = useState(0);
@@ -146,7 +147,7 @@ export default function MoviesPage() {
   );
 
   const mediaType = details?.media_type || (details?.name ? "tv" : "movie");
-  const streamUrl = `/api/entertainment/stream?type=${mediaType}&id=${details?.id}&season=${season}&episode=${episode}`;
+  const streamUrl = `/api/entertainment/stream?server=${selectedServer}&type=${mediaType}&id=${details?.id || selectedItem?.id}&season=${season}&episode=${episode}`;
 
   return (
     <div className="space-y-6">
@@ -271,43 +272,80 @@ export default function MoviesPage() {
         </div>
       )}
 
-      {/* Comprehensive Movie / TV Show Details & Streaming Modal (Full-Featured, No Small Popup) */}
+      {/* Comprehensive Movie / TV Show Details & Streaming Modal (Full Page When Streaming) */}
       {selectedItem && (
-        <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6 animate-in fade-in duration-200 overflow-y-auto">
-          <div className="bg-[#120e24] border border-purple-500/30 rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden shadow-2xl relative my-auto">
+        <div
+          className={
+            isStreaming
+              ? "fixed inset-0 z-50 bg-black w-screen h-screen flex flex-col overflow-hidden"
+              : "fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6 animate-in fade-in duration-200 overflow-y-auto"
+          }
+        >
+          <div
+            className={
+              isStreaming
+                ? "w-full h-full flex flex-col bg-black overflow-hidden"
+                : "bg-[#120e24] border border-purple-500/30 rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col overflow-hidden shadow-2xl relative my-auto"
+            }
+          >
             {/* Modal Header Bar */}
-            <div className="flex items-center justify-between px-5 py-3 bg-[#181330] border-b border-white/10 shrink-0 z-20">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between px-4 sm:px-6 py-2.5 sm:py-3 bg-[#16122c] border-b border-white/10 shrink-0 z-20">
+              <div className="flex items-center gap-3">
                 {isStreaming && (
                   <button
                     onClick={() => setIsStreaming(false)}
-                    className="flex items-center gap-1.5 mr-2 px-2.5 py-1 rounded-lg bg-white/5 hover:bg-white/10 text-xs text-zinc-300 hover:text-white transition-colors"
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/15 text-xs font-semibold text-zinc-200 hover:text-white transition-all border border-white/10"
                   >
                     <ArrowLeft className="w-3.5 h-3.5" />
-                    <span>Back to Details</span>
+                    <span className="hidden sm:inline">Back to Details</span>
                   </button>
                 )}
-                <span className="font-bold text-sm sm:text-base text-white truncate max-w-[280px] sm:max-w-md">
+                <span className="font-bold text-sm sm:text-base text-white truncate max-w-[200px] sm:max-w-md">
                   {details?.title || details?.name || selectedItem.title || selectedItem.name}
                 </span>
-                <span className="text-xs text-purple-400 uppercase font-semibold hidden sm:inline">
+                <span className="text-xs text-purple-400 uppercase font-semibold hidden md:inline">
                   [{mediaType}]
                 </span>
               </div>
 
+              {/* Streaming server selection & controls */}
               <div className="flex items-center gap-2">
+                {isStreaming && (
+                  <div className="flex items-center gap-1 bg-black/50 p-1 rounded-xl border border-white/10">
+                    {[
+                      { id: "cinesrc", name: "CineSrc" },
+                      { id: "vidlink", name: "VidLink" },
+                      { id: "vidsrc", name: "VidSrc" },
+                      { id: "autoembed", name: "AutoEmbed" },
+                    ].map((srv) => (
+                      <button
+                        key={srv.id}
+                        onClick={() => setSelectedServer(srv.id)}
+                        className={`px-2 sm:px-2.5 py-1 rounded-lg text-[11px] sm:text-xs font-semibold transition-all ${
+                          selectedServer === srv.id
+                            ? "bg-purple-600 text-white shadow-md shadow-purple-600/30"
+                            : "text-zinc-400 hover:text-white hover:bg-white/5"
+                        }`}
+                      >
+                        {srv.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 {isStreaming && (
                   <button
                     onClick={() => setPlayerKey((k) => k + 1)}
                     title="Reload Stream"
-                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-zinc-300 hover:text-white transition-colors"
+                    className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-zinc-300 hover:text-white transition-colors border border-white/5"
                   >
                     <RotateCw className="w-4 h-4" />
                   </button>
                 )}
+
                 <button
                   onClick={closeDetails}
-                  className="w-8 h-8 rounded-lg bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center text-red-400 hover:text-red-300 transition-colors"
+                  className="w-8 h-8 rounded-lg bg-red-500/20 hover:bg-red-500/30 flex items-center justify-center text-red-400 hover:text-red-300 transition-colors border border-red-500/30"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -316,12 +354,12 @@ export default function MoviesPage() {
 
             {/* Modal Body */}
             {isStreaming ? (
-              /* Dedicated Server-Side Proxied Video Stream Player */
-              <div className="flex-1 w-full h-[75vh] flex flex-col bg-black">
+              /* Dedicated Server-Side Proxied Video Stream Player (Full Screen, High Fidelity) */
+              <div className="flex-1 w-full h-full flex flex-col bg-black overflow-hidden relative">
                 {/* TV Episode Selector if TV show */}
                 {mediaType === "tv" && (
-                  <div className="flex items-center gap-3 px-4 py-2 bg-[#141026] border-b border-white/10 text-xs text-zinc-300">
-                    <span className="font-medium text-purple-300">TV Stream Config:</span>
+                  <div className="flex items-center gap-3 px-4 py-2 bg-[#120e24] border-b border-white/10 text-xs text-zinc-300 shrink-0">
+                    <span className="font-semibold text-purple-300">Episode Selection:</span>
                     <div className="flex items-center gap-1.5">
                       <label className="text-zinc-500">Season:</label>
                       <input
@@ -330,7 +368,7 @@ export default function MoviesPage() {
                         max={details?.number_of_seasons || 30}
                         value={season}
                         onChange={(e) => setSeason(Math.max(1, parseInt(e.target.value) || 1))}
-                        className="w-14 bg-black/60 border border-white/10 rounded px-2 py-0.5 text-center text-white"
+                        className="w-14 bg-black/60 border border-white/10 rounded px-2 py-0.5 text-center text-white text-xs"
                       />
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -341,27 +379,24 @@ export default function MoviesPage() {
                         max={50}
                         value={episode}
                         onChange={(e) => setEpisode(Math.max(1, parseInt(e.target.value) || 1))}
-                        className="w-14 bg-black/60 border border-white/10 rounded px-2 py-0.5 text-center text-white"
+                        className="w-14 bg-black/60 border border-white/10 rounded px-2 py-0.5 text-center text-white text-xs"
                       />
                     </div>
-                    <span className="text-zinc-500 text-[11px] ml-auto hidden sm:inline">
-                      Proxied via Cinesrc Engine (/api/entertainment/stream)
+                    <span className="text-zinc-500 text-[11px] ml-auto hidden sm:inline font-mono">
+                      Server: {selectedServer} • Proxied via Vercel
                     </span>
                   </div>
                 )}
 
-                {/* Proxied Embed Iframe */}
-                <div className="flex-1 w-full h-full relative bg-black">
-                  <iframe
-                    key={playerKey}
-                    src={streamUrl}
-                    title="LCE Stream Player"
-                    className="w-full h-full border-none"
-                    allowFullScreen
-                    allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-                    sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
-                  />
-                </div>
+                {/* Proxied Embed Iframe taking 100% of remaining screen */}
+                <iframe
+                  key={`${selectedServer}-${playerKey}-${season}-${episode}`}
+                  src={streamUrl}
+                  title="LCE Stream Player"
+                  className="w-full flex-1 h-full border-none bg-black"
+                  allowFullScreen
+                  allow="autoplay; fullscreen; picture-in-picture; encrypted-media; clipboard-write; display-capture"
+                />
               </div>
             ) : (
               /* Full Movie/TV Details View */

@@ -6,30 +6,63 @@ export async function GET(request: NextRequest) {
   const id = searchParams.get("id");
   const season = searchParams.get("season") || "1";
   const episode = searchParams.get("episode") || "1";
+  const server = searchParams.get("server") || "cinesrc";
   const format = searchParams.get("format"); // 'json' | 'html'
 
   if (!id) {
     return NextResponse.json({ error: "Missing TMDB media ID" }, { status: 400 });
   }
 
-  // Primary stream target on cinesrc.st
-  const streamUrl =
-    type === "tv"
-      ? `https://cinesrc.st/embed/tv/${id}/${season}/${episode}`
-      : `https://cinesrc.st/embed/movie/${id}`;
+  // Calculate provider targets
+  let targetUrl = "";
+  switch (server) {
+    case "vidlink":
+      targetUrl =
+        type === "tv"
+          ? `https://vidlink.pro/tv/${id}/${season}/${episode}`
+          : `https://vidlink.pro/movie/${id}`;
+      break;
+    case "vidsrc":
+      targetUrl =
+        type === "tv"
+          ? `https://vidsrc.cc/v2/embed/tv/${id}/${season}/${episode}`
+          : `https://vidsrc.cc/v2/embed/movie/${id}`;
+      break;
+    case "autoembed":
+      targetUrl =
+        type === "tv"
+          ? `https://autoembed.co/tv/tmdb/${id}-${season}-${episode}`
+          : `https://autoembed.co/movie/tmdb/${id}`;
+      break;
+    case "multiembed":
+      targetUrl = `https://multiembed.mov/?video_id=${id}&tmdb=1${
+        type === "tv" ? `&s=${season}&e=${episode}` : ""
+      }`;
+      break;
+    case "cinesrc":
+    default:
+      targetUrl =
+        type === "tv"
+          ? `https://cinesrc.st/embed/tv/${id}/${season}/${episode}`
+          : `https://cinesrc.st/embed/movie/${id}`;
+      break;
+  }
 
   if (format === "json") {
     return NextResponse.json({
       success: true,
-      provider: "Cinesrc",
-      streamUrl,
+      provider: server,
+      streamUrl: targetUrl,
       type,
       id,
       season,
       episode,
-      fallbacks: [
-        `https://vidsrc.to/embed/${type}/${id}${type === "tv" ? `/${season}/${episode}` : ""}`,
-        `https://multiembed.mov/?video_id=${id}&tmdb=1${type === "tv" ? `&s=${season}&e=${episode}` : ""}`,
+      servers: [
+        { id: "cinesrc", name: "CineSrc (Fast HD)" },
+        { id: "vidlink", name: "VidLink (Multi-Audio)" },
+        { id: "vidsrc", name: "VidSrc v2" },
+        { id: "autoembed", name: "AutoEmbed Stream" },
+        { id: "multiembed", name: "MultiEmbed Mirror" },
       ],
     });
   }
@@ -51,12 +84,11 @@ export async function GET(request: NextRequest) {
 <body>
   <iframe 
     id="stream-frame"
-    src="${streamUrl}" 
+    src="${targetUrl}" 
     allowfullscreen="true" 
     webkitallowfullscreen="true" 
     mozallowfullscreen="true"
-    allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-    sandbox="allow-scripts allow-same-origin allow-forms allow-presentation"
+    allow="autoplay; fullscreen; picture-in-picture; encrypted-media; clipboard-write; display-capture"
   ></iframe>
 </body>
 </html>`;
@@ -64,7 +96,7 @@ export async function GET(request: NextRequest) {
   return new NextResponse(html, {
     headers: {
       "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "public, max-age=3600, s-maxage=3600",
+      "Cache-Control": "public, max-age=1800, s-maxage=1800",
       "X-Frame-Options": "SAMEORIGIN",
     },
   });
