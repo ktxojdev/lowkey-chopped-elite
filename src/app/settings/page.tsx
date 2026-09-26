@@ -304,15 +304,21 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Section 3: ChoppedAI Inference */}
+      {/* Section 3: Llama 3.3 Engine */}
       <div className="bg-[#120e24] border border-white/10 rounded-2xl p-6 shadow-xl space-y-5">
-        <div className="flex items-center gap-2.5 pb-3 border-b border-white/5">
-          <Bot className="w-5 h-5 text-indigo-400" />
-          <h2 className="text-base font-bold text-white">ChoppedAI Assistant Settings</h2>
+        <div className="flex items-center justify-between pb-3 border-b border-white/5">
+          <div className="flex items-center gap-2.5">
+            <Bot className="w-5 h-5 text-purple-400" />
+            <h2 className="text-base font-bold text-white">Llama 3.3 (70B Instruct) Engine</h2>
+          </div>
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Only Active AI
+          </span>
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-zinc-300 mb-1.5">Local Ollama Host Endpoint</label>
+          <label className="block text-xs font-medium text-zinc-300 mb-1.5">Local Ollama Host Endpoint (Optional)</label>
           <Input
             value={ollamaUrl}
             onChange={(e) => setOllamaUrl(e.target.value)}
@@ -413,9 +419,24 @@ export default function SettingsPage() {
             <Heart className="w-5 h-5 text-rose-400" />
             <h2 className="text-base font-bold text-white">Credits & Contributors</h2>
           </div>
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 rounded-full">
-            Team
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              100% Built by Humans
+            </span>
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 rounded-full">
+              Team
+            </span>
+          </div>
+        </div>
+
+        {/* Human Authorship Declaration Banner */}
+        <div className="p-3.5 rounded-xl bg-gradient-to-r from-purple-950/40 via-blue-950/20 to-purple-950/40 border border-purple-500/20 text-xs text-zinc-300 leading-relaxed">
+          <p className="font-semibold text-white mb-1 flex items-center gap-2">
+            <Code2 className="w-4 h-4 text-purple-400" />
+            Handcrafted with Human Engineering
+          </p>
+          Lowkey Chopped Elite is built from the ground up by real human developers. Every route, component, layout, and proxy engine was designed and coded with care by our team — built by humans, for students and creators.
         </div>
 
         {/* Contributors Grid */}

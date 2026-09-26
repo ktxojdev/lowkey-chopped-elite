@@ -20,7 +20,7 @@ export default function Navbar() {
     { name: "Home", href: "/", icon: Compass },
     { name: "Activities", href: "/games", icon: Gamepad2 },
     { name: "Entertainment", href: "/entertainment", icon: Clapperboard },
-    { name: "ChoppedAI", href: "/ai", icon: Sparkles },
+    { name: "Llama AI", href: "/ai", icon: Sparkles },
     { name: "Soundboard", href: "/soundboard", icon: Volume2 },
     { name: "VM", href: "/vm", icon: Terminal },
     { name: "Settings", href: "/settings", icon: Settings },

@@ -110,8 +110,8 @@ export function CommandMenu() {
             onSelect={() => runCommand(() => router.push("/ai"))}
             className="cursor-pointer"
           >
-            <Bot className="mr-2 h-4 w-4 text-indigo-400" />
-            <span>ChoppedAI Studio</span>
+            <Bot className="mr-2 h-4 w-4 text-purple-400" />
+            <span>Llama 3.3 AI Studio</span>
           </CommandItem>
           <CommandItem
             onSelect={() => runCommand(() => router.push("/soundboard"))}
@@ -139,7 +139,7 @@ export function CommandMenu() {
             className="cursor-pointer"
           >
             <Heart className="mr-2 h-4 w-4 text-rose-400" />
-            <span>Credits & Contributors (turg, c2x86, fanu, sharwie)</span>
+            <span>Built by Humans: Team Credits (turg, c2x86, fanu, sharwie)</span>
           </CommandItem>
         </CommandGroup>
 
