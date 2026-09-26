@@ -76,6 +76,34 @@ export default function YouTubePage() {
 
   useEffect(() => {
     fetchVideos("trending videos");
+
+    // Close modal on Escape key press
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setSelectedVideo(null);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Check URL query parameter for direct video loading (?v=...)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const videoId = params.get("v");
+      if (videoId && !selectedVideo) {
+        setSelectedVideo({
+          id: videoId,
+          title: "Shared Video",
+          channel: "YouTube",
+          duration: "Video",
+          views: "Streaming",
+          published: "Now",
+          thumbnail: `/api/entertainment/youtube/thumb?id=${videoId}`,
+        });
+      }
+    }
   }, []);
 
   const handleCategorySelect = (cat: typeof CATEGORIES[0]) => {
