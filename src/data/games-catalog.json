@@ -1,5 +1,13 @@
 [
   {
+    "id": 0,
+    "title": "Unturned Web (3D Survival)",
+    "cover": "/unturned/cover.png",
+    "playUrl": "/unturned/index.html",
+    "category": "Action",
+    "originalUrl": "/unturned"
+  },
+  {
     "id": 1,
     "title": "Minecraft",
     "cover": "/api/games/proxy?type=cover&file=storage%2Fimages%2Fmain%2Fminecraft.jpg",

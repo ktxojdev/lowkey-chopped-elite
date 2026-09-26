@@ -87,6 +87,13 @@ export function CommandMenu() {
             <span>Activities & Games</span>
           </CommandItem>
           <CommandItem
+            onSelect={() => runCommand(() => router.push("/unturned"))}
+            className="cursor-pointer"
+          >
+            <Gamepad2 className="mr-2 h-4 w-4 text-green-400" />
+            <span>Unturned Web (3D Zombie Survival)</span>
+          </CommandItem>
+          <CommandItem
             onSelect={() => runCommand(() => router.push("/entertainment/movies"))}
             className="cursor-pointer"
           >

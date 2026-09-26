@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Unturned Web - 3D Zombie Survival</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #fff;
+    }
+    #game-canvas {
+      display: block;
+      width: 100vw;
+      height: 100vh;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* --- CROSSHAIR & HITMARKER --- */
+    #crosshair-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 20;
+    }
+    .crosshair-dot {
+      width: 4px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.9);
+      border-radius: 50%;
+      box-shadow: 0 0 2px #000;
+    }
+    .crosshair-line {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.75);
+      box-shadow: 0 0 2px #000;
+    }
+    .line-top { top: -14px; left: 1px; width: 2px; height: 8px; }
+    .line-bottom { bottom: -14px; left: 1px; width: 2px; height: 8px; }
+    .line-left { left: -14px; top: 1px; width: 8px; height: 2px; }
+    .line-right { right: -14px; top: 1px; width: 8px; height: 2px; }
+
+    #hitmarker {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 24px;
+      height: 24px;
+      pointer-events: none;
+      z-index: 21;
+      opacity: 0;
+      transition: opacity 0.05s ease-out;
+    }
+    #hitmarker.hitmarker-active {
+      opacity: 1;
+    }
+    #hitmarker.body {
+      color: #ffffff;
+      text-shadow: 0 0 4px #000;
+    }
+    #hitmarker.headshot {
+      color: #ef4444;
+      text-shadow: 0 0 8px #ef4444, 0 0 2px #000;
+      transform: translate(-50%, -50%) scale(1.3);
+    }
+
+    /* --- BLEEDING VIGNETTE --- */
+    #bleed-vignette {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      box-shadow: inset 0 0 80px 30px rgba(220, 38, 38, 0.6);
+      z-index: 15;
+      animation: pulseBleed 1.2s infinite alternate ease-in-out;
+    }
+    @keyframes pulseBleed {
+      0% { opacity: 0.3; }
+      100% { opacity: 0.8; }
+    }
+
+    /* --- UNTURNED HUD --- */
+    #hud {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 24px;
+    }
+
+    /* Location / Compass */
+    .hud-top {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .location-badge {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 9999px;
+      padding: 6px 20px;
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #f8fafc;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(8px);
+    }
+
+    /* Interaction Prompt */
+    .interaction-tooltip {
+      position: absolute;
+      bottom: 140px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(59, 130, 246, 0.5);
+      border-radius: 8px;
+      padding: 8px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      color: #93c5fd;
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+      backdrop-filter: blur(8px);
+    }
+
+    /* HUD Bottom Row */
+    .hud-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      width: 100%;
+    }
+
+    /* Vital Stats Bars (Unturned Icons) */
+    .vitals-container {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 12px 14px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+      width: 220px;
+    }
+    .vital-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .vital-icon {
+      font-size: 15px;
+      width: 20px;
+      text-align: center;
+    }
+    .bar-bg {
+      flex: 1;
+      height: 9px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 9999px;
+      overflow: hidden;
+      position: relative;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 9999px;
+      transition: width 0.2s ease-out;
+    }
+    .fill-hp { background: linear-gradient(90deg, #ef4444, #f87171); }
+    .fill-hunger { background: linear-gradient(90deg, #ea580c, #fb923c); }
+    .fill-thirst { background: linear-gradient(90deg, #0284c7, #38bdf8); }
+    .fill-stamina { background: linear-gradient(90deg, #ca8a04, #facc15); }
+    .fill-immunity { background: linear-gradient(90deg, #16a34a, #4ade80); }
+    .vital-val {
+      font-size: 11px;
+      font-weight: 700;
+      color: #94a3b8;
+      width: 28px;
+      text-align: right;
+    }
+
+    /* Hotbar 1 - 5 */
+    .hotbar-container {
+      display: flex;
+      gap: 8px;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      padding: 8px 10px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    }
+    .hotbar-slot {
+      width: 54px;
+      height: 54px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      transition: all 0.15s ease;
+    }
+    .hotbar-slot.active {
+      border-color: #38bdf8;
+      background: rgba(56, 189, 248, 0.2);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.5);
+      transform: translateY(-4px);
+    }
+    .slot-num {
+      position: absolute;
+      top: 3px;
+      left: 5px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #64748b;
+    }
+    .slot-icon {
+      font-size: 24px;
+    }
+    .slot-count {
+      position: absolute;
+      bottom: 3px;
+      right: 5px;
+      font-size: 10px;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+
+    /* Weapon & Ammo Box */
+    .weapon-box {
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 12px 18px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+      text-align: right;
+      min-width: 140px;
+    }
+    .weapon-name {
+      font-size: 14px;
+      font-weight: 800;
+      color: #f8fafc;
+      letter-spacing: 0.04em;
+    }
+    .ammo-counter {
+      font-size: 22px;
+      font-weight: 900;
+      color: #38bdf8;
+      margin-top: 2px;
+      letter-spacing: 0.05em;
+    }
+
+    /* --- OVERLAY SCREENS (MAIN MENU, INVENTORY, PAUSE, DEATH) --- */
+    .overlay-screen {
+      position: absolute;
+      inset: 0;
+      z-index: 50;
+      background: rgba(10, 15, 29, 0.85);
+      backdrop-filter: blur(12px);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 24px;
+    }
+
+    /* Main Menu */
+    .menu-title {
+      font-size: 64px;
+      font-weight: 900;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 50%, #64748b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+      text-shadow: 0 4px 24px rgba(0, 0, 0, 0.8);
+    }
+    .menu-subtitle {
+      font-size: 16px;
+      font-weight: 600;
+      color: #38bdf8;
+      letter-spacing: 0.25em;
+      text-transform: uppercase;
+      margin-bottom: 36px;
+    }
+    .menu-btn {
+      width: 260px;
+      padding: 14px 24px;
+      margin: 8px 0;
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      color: #f8fafc;
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+    .menu-btn:hover {
+      background: #38bdf8;
+      color: #0f172a;
+      border-color: #38bdf8;
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(56, 189, 248, 0.4);
+    }
+    .menu-btn.primary {
+      background: #2563eb;
+      border-color: #3b82f6;
+    }
+    .menu-btn.primary:hover {
+      background: #38bdf8;
+    }
+
+    /* Inventory Modal */
+    .modal-box {
+      width: 900px;
+      max-width: 95vw;
+      background: #0f172a;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 16px;
+      box-shadow: 0 12px 48px rgba(0, 0, 0, 0.8);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .modal-header {
+      padding: 16px 24px;
+      background: #1e293b;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #f8fafc;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      color: #94a3b8;
+      font-size: 24px;
+      cursor: pointer;
+    }
+    .modal-body {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr;
+      gap: 20px;
+      padding: 24px;
+      max-height: 70vh;
+      overflow-y: auto;
+    }
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: #38bdf8;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+    }
+    .inv-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+    .inv-slot {
+      height: 70px;
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      padding: 4px;
+    }
+    .inv-slot:hover {
+      border-color: #38bdf8;
+      background: #334155;
+    }
+    .inv-slot .slot-title {
+      font-size: 9px;
+      text-align: center;
+      color: #cbd5e1;
+      margin-top: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      width: 100%;
+    }
+    .crafting-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .craft-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .craft-name {
+      font-size: 14px;
+      font-weight: 700;
+      color: #f8fafc;
+    }
+    .craft-desc {
+      font-size: 11px;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+    .craft-btn {
+      padding: 8px 16px;
+      background: #2563eb;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .craft-btn:disabled {
+      background: #334155;
+      color: #64748b;
+      cursor: not-allowed;
+    }
+    .craft-btn:not(:disabled):hover {
+      background: #38bdf8;
+      color: #0f172a;
+    }
+
+    /* Death Screen */
+    .death-title {
+      font-size: 72px;
+      font-weight: 900;
+      color: #ef4444;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      text-shadow: 0 0 30px rgba(239, 68, 68, 0.8);
+      margin-bottom: 12px;
+    }
+    .death-stats {
+      background: #1e293b;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 16px 24px;
+      margin-bottom: 24px;
+      text-align: center;
+      line-height: 1.8;
+      font-size: 15px;
+      color: #cbd5e1;
+    }
+    .stat-val {
+      font-weight: 800;
+      color: #38bdf8;
+    }
+
+    /* Instructions / Help */
+    .controls-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin: 20px 0;
+      font-size: 14px;
+      color: #cbd5e1;
+    }
+    .key-badge {
+      display: inline-block;
+      background: #334155;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      padding: 2px 7px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #f8fafc;
+      margin-right: 6px;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game-canvas"></canvas>
+
+  <!-- Crosshair & Hitmarker -->
+  <div id="crosshair-container">
+    <div class="crosshair-dot"></div>
+    <div class="crosshair-line line-top"></div>
+    <div class="crosshair-line line-bottom"></div>
+    <div class="crosshair-line line-left"></div>
+    <div class="crosshair-line line-right"></div>
+    <div id="hitmarker">✕</div>
+  </div>
+
+  <!-- Bleeding Vignette -->
+  <div id="bleed-vignette" class="hidden"></div>
+
+  <!-- HUD -->
+  <div id="hud" class="hidden">
+    <div class="hud-top">
+      <div id="location-display" class="location-badge">Prince Edward Island</div>
+    </div>
+
+    <div id="interaction-hint" class="interaction-tooltip hidden">[F] Interact</div>
+
+    <div class="hud-bottom">
+      <!-- Vitals Bars -->
+      <div class="vitals-container">
+        <div class="vital-row">
+          <span class="vital-icon">❤️</span>
+          <div class="bar-bg"><div id="hp-bar" class="bar-fill fill-hp" style="width: 100%;"></div></div>
+          <span id="hp-text" class="vital-val">100%</span>
+        </div>
+        <div class="vital-row">
+          <span class="vital-icon">🍔</span>
+          <div class="bar-bg"><div id="hunger-bar" class="bar-fill fill-hunger" style="width: 100%;"></div></div>
+          <span id="hunger-text" class="vital-val">100%</span>
+        </div>
+        <div class="vital-row">
+          <span class="vital-icon">💧</span>
+          <div class="bar-bg"><div id="thirst-bar" class="bar-fill fill-thirst" style="width: 100%;"></div></div>
+          <span id="thirst-text" class="vital-val">100%</span>
+        </div>
+        <div class="vital-row">
+          <span class="vital-icon">⚡</span>
+          <div class="bar-bg"><div id="stamina-bar" class="bar-fill fill-stamina" style="width: 100%;"></div></div>
+          <span id="stamina-text" class="vital-val">100%</span>
+        </div>
+        <div class="vital-row">
+          <span class="vital-icon">☣️</span>
+          <div class="bar-bg"><div id="immunity-bar" class="bar-fill fill-immunity" style="width: 100%;"></div></div>
+          <span id="immunity-text" class="vital-val">100%</span>
+        </div>
+      </div>
+
+      <!-- Hotbar Slots 1-5 -->
+      <div class="hotbar-container">
+        <div id="hotbar-0" class="hotbar-slot active"></div>
+        <div id="hotbar-1" class="hotbar-slot"></div>
+        <div id="hotbar-2" class="hotbar-slot"></div>
+        <div id="hotbar-3" class="hotbar-slot"></div>
+        <div id="hotbar-4" class="hotbar-slot"></div>
+      </div>
+
+      <!-- Weapon & Ammo -->
+      <div class="weapon-box">
+        <div id="weapon-name" class="weapon-name">Maplestrike</div>
+        <div id="ammo-counter" class="ammo-counter">30 / 60</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN MENU -->
+  <div id="main-menu" class="overlay-screen">
+    <h1 class="menu-title">UNTURNED</h1>
+    <div class="menu-subtitle">WEB SURVIVAL EDITION</div>
+
+    <button id="btn-play" class="menu-btn primary">PLAY SURVIVAL</button>
+    <button id="btn-controls" class="menu-btn">CONTROLS</button>
+    <button id="btn-about" class="menu-btn">ABOUT</button>
+
+    <div style="margin-top: 24px; font-size: 12px; color: #64748b;">
+      Ported to WebGL / Web Audio for Lowkey Chopped Elite
+    </div>
+  </div>
+
+  <!-- CONTROLS MODAL -->
+  <div id="controls-modal" class="overlay-screen hidden">
+    <div class="modal-box" style="width: 600px;">
+      <div class="modal-header">
+        <span class="modal-title">GAME CONTROLS</span>
+        <button id="btn-close-controls" class="modal-close">×</button>
+      </div>
+      <div style="padding: 24px;">
+        <div class="controls-grid">
+          <div><span class="key-badge">W A S D</span> Walk / Drive</div>
+          <div><span class="key-badge">Shift</span> Sprint</div>
+          <div><span class="key-badge">Space</span> Jump / Handbrake</div>
+          <div><span class="key-badge">C / Ctrl</span> Crouch</div>
+          <div><span class="key-badge">Left Click</span> Attack / Shoot</div>
+          <div><span class="key-badge">Right Click</span> Aim Down Sights (ADS)</div>
+          <div><span class="key-badge">R</span> Reload Gun</div>
+          <div><span class="key-badge">F / E</span> Interact / Drive Car</div>
+          <div><span class="key-badge">1 - 5</span> Select Hotbar Slot</div>
+          <div><span class="key-badge">Tab / G</span> Open Inventory & Crafting</div>
+          <div><span class="key-badge">V</span> Toggle 1st / 3rd Person</div>
+          <div><span class="key-badge">L</span> Vehicle Headlights / Flashlight</div>
+          <div><span class="key-badge">H</span> Vehicle Horn</div>
+          <div><span class="key-badge">Esc</span> Pause Menu</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INVENTORY & CRAFTING MODAL -->
+  <div id="inventory-modal" class="overlay-screen hidden">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-title">SURVIVOR BACKPACK & CRAFTING</span>
+        <button id="btn-close-inv" class="modal-close">×</button>
+      </div>
+      <div class="modal-body">
+        <!-- Left: Backpack Grid -->
+        <div>
+          <div class="section-title">Backpack Storage (Click item to use)</div>
+          <div id="inv-grid" class="inv-grid"></div>
+        </div>
+
+        <!-- Right: Crafting Recipes -->
+        <div>
+          <div class="section-title">Field Crafting</div>
+          <div id="crafting-list" class="crafting-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAUSE MENU -->
+  <div id="pause-menu" class="overlay-screen hidden">
+    <h2 class="menu-title" style="font-size: 42px;">PAUSED</h2>
+    <button id="btn-resume" class="menu-btn primary">RESUME</button>
+    <button id="btn-menu-controls" class="menu-btn">CONTROLS</button>
+    <button id="btn-quit" class="menu-btn" onclick="location.reload()">QUIT TO MENU</button>
+  </div>
+
+  <!-- DEATH SCREEN -->
+  <div id="death-screen" class="overlay-screen hidden">
+    <h1 class="death-title">YOU DIED</h1>
+    <div class="death-stats">
+      <div>Zombies Killed: <span id="death-kills" class="stat-val">0</span></div>
+      <div>Headshots: <span id="death-headshots" class="stat-val">0</span></div>
+      <div>Time Survived: <span id="death-time" class="stat-val">0s</span></div>
+    </div>
+    <button id="btn-respawn" class="menu-btn primary">RESPAWN</button>
+  </div>
+
+  <!-- GAME BOOTSTRAP SCRIPT -->
+  <script type="module">
+    import { UnturnedGame } from './js/game.js';
+
+    const canvas = document.getElementById('game-canvas');
+    const game = new UnturnedGame(canvas);
+    window.game = game;
+    window.__gameReady = true;
+
+    // UI Click Handlers
+    document.getElementById('btn-play').onclick = () => game.startGame();
+    document.getElementById('btn-resume').onclick = () => game.resumeGame();
+    document.getElementById('btn-respawn').onclick = () => game.respawn();
+    document.getElementById('btn-close-inv').onclick = () => game.closeInventory();
+
+    document.getElementById('btn-controls').onclick = () => {
+      document.getElementById('controls-modal').classList.remove('hidden');
+    };
+    document.getElementById('btn-menu-controls').onclick = () => {
+      document.getElementById('controls-modal').classList.remove('hidden');
+    };
+    document.getElementById('btn-close-controls').onclick = () => {
+      document.getElementById('controls-modal').classList.add('hidden');
+    };
+
+    document.getElementById('btn-about').onclick = () => {
+      alert('Unturned Web Edition\nA fully featured 3D survival game ported for Lowkey Chopped Elite.\nIncludes open world, driving, shooting, zombie AI, looting, crafting, and day/night cycle.');
+    };
+  </script>
+</body>
+</html>

@@ -31,7 +31,9 @@ export default function HomePage() {
       return;
     }
 
-    if (trimmed.includes("game") || trimmed.includes("activit") || trimmed.includes("play")) {
+    if (trimmed.includes("unturned") || trimmed.includes("zombie")) {
+      router.push(`/unturned`);
+    } else if (trimmed.includes("game") || trimmed.includes("activit") || trimmed.includes("play")) {
       router.push(`/games?q=${encodeURIComponent(query.trim())}`);
     } else if (trimmed.includes("movie") || trimmed.includes("show") || trimmed.includes("stream")) {
       router.push(`/entertainment/movies?q=${encodeURIComponent(query.trim())}`);
