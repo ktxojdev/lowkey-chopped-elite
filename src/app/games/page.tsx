@@ -335,8 +335,7 @@ export default function GamesPage() {
               src={activeGame.playUrl}
               title={activeGame.title}
               className="w-full h-full border-none"
-              allow="autoplay; fullscreen; keyboard; gamepad; clipboard-read; clipboard-write"
-              sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-forms"
+              allow="autoplay; fullscreen; keyboard; gamepad; clipboard-read; clipboard-write; microphone; camera"
             />
           </div>
         </div>

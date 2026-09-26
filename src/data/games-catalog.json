@@ -3,7 +3,7 @@
     "id": 1,
     "title": "Minecraft",
     "cover": "/api/games/proxy?type=cover&file=storage%2Fimages%2Fmain%2Fminecraft.jpg",
-    "playUrl": "/api/games/proxy?type=lib&game=precision",
+    "playUrl": "/api/games/proxy?type=lib&game=mc",
     "category": "Sandbox",
     "originalUrl": "/iframe.html?url=/storage/ag/originals/precision/index.html"
   },
@@ -11,7 +11,7 @@
     "id": 2,
     "title": "Roblox",
     "cover": "/api/games/proxy?type=cover&file=storage%2Fimages%2Fmain2%2Froblox.webp",
-    "playUrl": "https://nowgg.fun",
+    "playUrl": "/api/games/proxy?type=lib&game=roblox",
     "category": "Arcade",
     "originalUrl": "/iframe.html?url=/embed.html#https://nowgg.fun"
   },
@@ -123,7 +123,7 @@
     "id": 16,
     "title": "Fortnite",
     "cover": "/api/games/proxy?type=cover&file=storage%2Fimages%2Fmain%2Ffakefortnight.jpg",
-    "playUrl": "/storage/ag/apps/geforce/index.html",
+    "playUrl": "/api/games/proxy?type=lib&game=1v1lol",
     "category": "Shooting",
     "originalUrl": "/iframe.html?url=/storage/ag/apps/geforce/index.html"
   },

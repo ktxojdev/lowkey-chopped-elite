@@ -8,14 +8,14 @@ import { CommandMenu } from "@/components/search/CommandMenu";
 import TabCloakProvider from "@/components/layout/TabCloakProvider";
 
 export const metadata: Metadata = {
-  title: "Portal | Workspace",
-  description: "Unified productivity workspace for activities, learning tools, media, and development.",
+  title: "Clever | Portal",
+  description: "Clever Single Sign-On Portal",
   icons: {
     icon: [
-      { url: "/icon.png", type: "image/png" },
+      { url: "/cloaks/clever.png", type: "image/png" },
       { url: "/favicon.ico", sizes: "32x32" },
     ],
-    apple: "/apple-icon.png",
+    apple: "/cloaks/clever.png",
   },
 };
 

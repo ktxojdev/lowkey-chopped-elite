@@ -183,7 +183,7 @@ export default function SettingsPage() {
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5 pt-1">
           {[
-            { id: "default", name: "Portal (Clean)", sub: "Portal | Workspace" },
+            { id: "default", name: "Clever (Default)", sub: "Clever | Portal" },
             { id: "classroom", name: "Classroom", sub: "Classes" },
             { id: "docs", name: "Google Docs", sub: "Untitled document" },
             { id: "drive", name: "Google Drive", sub: "My Drive" },

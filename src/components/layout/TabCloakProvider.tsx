@@ -4,8 +4,12 @@ import { useEffect } from "react";
 
 export const CLOAK_PRESETS: Record<string, { title: string; icon: string }> = {
   default: {
-    title: "Portal | Workspace",
-    icon: "/icon.png",
+    title: "Clever | Portal",
+    icon: "/cloaks/clever.png",
+  },
+  clever: {
+    title: "Clever | Portal",
+    icon: "/cloaks/clever.png",
   },
   classroom: {
     title: "Classes",
