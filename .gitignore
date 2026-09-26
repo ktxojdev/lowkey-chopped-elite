@@ -32,5 +32,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.vercel
-.env*
+# automation dependencies & artifacts
+/automation/.venv/
+/automation/node_modules/
+/automation/*.png
+/automation/automation/
