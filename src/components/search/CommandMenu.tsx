@@ -16,6 +16,7 @@ import {
   Sparkles,
   ExternalLink,
   Heart,
+  Play,
 } from "lucide-react";
 import {
   CommandDialog,
@@ -93,6 +94,13 @@ export function CommandMenu() {
             <span>Movies & TV Shows</span>
           </CommandItem>
           <CommandItem
+            onSelect={() => runCommand(() => router.push("/entertainment/youtube"))}
+            className="cursor-pointer"
+          >
+            <Play className="mr-2 h-4 w-4 text-red-500 fill-red-500" />
+            <span>YouTube Unblocked (Proxy)</span>
+          </CommandItem>
+          <CommandItem
             onSelect={() => runCommand(() => router.push("/entertainment/live"))}
             className="cursor-pointer"
           >
@@ -139,7 +147,7 @@ export function CommandMenu() {
             className="cursor-pointer"
           >
             <Heart className="mr-2 h-4 w-4 text-rose-400" />
-            <span>Built by Humans: Team Credits (turg, c2x86, fanu, sharwie)</span>
+            <span>Credits & Contributors (turg, c2x86, fanu, sharwie)</span>
           </CommandItem>
         </CommandGroup>
 

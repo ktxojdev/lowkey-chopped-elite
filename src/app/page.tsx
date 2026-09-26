@@ -96,16 +96,15 @@ export default function HomePage() {
         </div>
       </form>
 
-      {/* Footer / Human Authorship & Credits */}
-      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 text-center text-xs">
+      {/* Footer / Credits Link */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-center text-xs text-zinc-500">
         <Link 
           href="/settings#credits" 
-          className="inline-flex items-center gap-2 hover:text-white transition-all py-1.5 px-3.5 rounded-full bg-white/[0.04] hover:bg-white/[0.08] border border-white/10 shadow-lg backdrop-blur-md group"
+          className="inline-flex items-center gap-1.5 hover:text-zinc-300 transition-colors py-1 px-3 rounded-full hover:bg-white/5"
         >
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="font-semibold text-zinc-300 group-hover:text-white transition-colors">100% Built by Humans, Not AI</span>
-          <span className="text-zinc-600">•</span>
-          <span className="text-zinc-400 group-hover:text-purple-300 transition-colors">Team: turg, c2x86, fanu, sharwie</span>
+          <span>Crafted with</span>
+          <Heart className="w-3 h-3 text-rose-500 fill-rose-500" />
+          <span>by turg, c2x86, fanu, sharwie</span>
         </Link>
       </div>
     </div>

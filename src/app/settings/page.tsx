@@ -311,9 +311,9 @@ export default function SettingsPage() {
             <Bot className="w-5 h-5 text-purple-400" />
             <h2 className="text-base font-bold text-white">Llama 3.3 (70B Instruct) Engine</h2>
           </div>
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full flex items-center gap-1">
+          <span className="text-[10px] font-semibold uppercase tracking-wider text-purple-300 bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Only Active AI
+            Online
           </span>
         </div>
 
@@ -419,24 +419,9 @@ export default function SettingsPage() {
             <Heart className="w-5 h-5 text-rose-400" />
             <h2 className="text-base font-bold text-white">Credits & Contributors</h2>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-0.5 rounded-full flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              100% Built by Humans
-            </span>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 rounded-full">
-              Team
-            </span>
-          </div>
-        </div>
-
-        {/* Human Authorship Declaration Banner */}
-        <div className="p-3.5 rounded-xl bg-gradient-to-r from-purple-950/40 via-blue-950/20 to-purple-950/40 border border-purple-500/20 text-xs text-zinc-300 leading-relaxed">
-          <p className="font-semibold text-white mb-1 flex items-center gap-2">
-            <Code2 className="w-4 h-4 text-purple-400" />
-            Handcrafted with Human Engineering
-          </p>
-          Lowkey Chopped Elite is built from the ground up by real human developers. Every route, component, layout, and proxy engine was designed and coded with care by our team — built by humans, for students and creators.
+          <span className="text-[11px] font-semibold uppercase tracking-wider text-purple-400 bg-purple-500/10 border border-purple-500/20 px-2.5 py-0.5 rounded-full">
+            Core Team
+          </span>
         </div>
 
         {/* Contributors Grid */}
