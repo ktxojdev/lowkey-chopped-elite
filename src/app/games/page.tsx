@@ -8,16 +8,32 @@ import {
   RotateCw, 
   X, 
   Heart, 
-  ExternalLink,
-  Play,
-  Loader2,
-  Minimize2
+  ExternalLink, 
+  Play, 
+  Loader2, 
+  Minimize2,
+  ChevronDown
 } from "lucide-react";
 import type { GameItem } from "@/app/api/games/catalog/route";
 
-const CATEGORIES = ["All", "Action", "Platformer", "Racing", "Puzzle", "Sandbox", "Arcade", "Favorites"];
+const CATEGORIES = [
+  "All", 
+  "Action", 
+  "Arcade", 
+  "Racing", 
+  "Skill", 
+  "Strategy", 
+  "Shooting", 
+  "Sports", 
+  "Puzzle", 
+  "Sandbox", 
+  "2 Player", 
+  "Favorites"
+];
 
-export default function ActivitiesPage() {
+const INITIAL_BATCH_SIZE = 60;
+
+export default function GamesPage() {
   const [games, setGames] = useState<GameItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -26,6 +42,7 @@ export default function ActivitiesPage() {
   const [favorites, setFavorites] = useState<number[]>([]);
   const [iframeKey, setIframeKey] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(INITIAL_BATCH_SIZE);
   const gameContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -41,9 +58,14 @@ export default function ActivitiesPage() {
       .then((data) => {
         if (data.games) setGames(data.games);
       })
-      .catch((err) => console.error("Error loading activities:", err))
+      .catch((err) => console.error("Error loading games:", err))
       .finally(() => setLoading(false));
   }, []);
+
+  // Reset pagination count on search or category change
+  useEffect(() => {
+    setVisibleCount(INITIAL_BATCH_SIZE);
+  }, [search, category]);
 
   const toggleFavorite = (id: number, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -65,6 +87,12 @@ export default function ActivitiesPage() {
       return g.category === category;
     });
   }, [games, search, category, favorites]);
+
+  const displayedGames = useMemo(() => {
+    return filteredGames.slice(0, visibleCount);
+  }, [filteredGames, visibleCount]);
+
+  const hasMore = visibleCount < filteredGames.length;
 
   const launchGame = (game: GameItem) => {
     setActiveGame(game);
@@ -93,10 +121,10 @@ export default function ActivitiesPage() {
         <div>
           <div className="flex items-center gap-2.5">
             <Gamepad2 className="w-8 h-8 text-purple-400" />
-            <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white">Activities</h1>
+            <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white">Games</h1>
           </div>
           <p className="text-zinc-400 text-sm mt-1">
-            Explore and play hundreds of web games and interactive activities directly in LCE.
+            Explore and play {games.length > 0 ? games.length.toLocaleString() : "hundreds of"} web games directly in LCE.
           </p>
         </div>
 
@@ -107,7 +135,7 @@ export default function ActivitiesPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search activities..."
+            placeholder="Search games..."
             className="w-full bg-[#141024] border border-white/10 focus:border-purple-500/50 rounded-full pl-10 pr-4 py-2 text-sm text-zinc-200 placeholder-zinc-500 outline-none transition-all shadow-inner"
           />
         </div>
@@ -133,93 +161,108 @@ export default function ActivitiesPage() {
         })}
       </div>
 
-      {/* Activities Grid */}
+      {/* Games Grid */}
       {loading ? (
         <div className="flex flex-col items-center justify-center py-32 text-zinc-500">
           <Loader2 className="w-8 h-8 animate-spin text-purple-400 mb-3" />
-          <p className="text-sm">Fetching GN Math activities catalog...</p>
+          <p className="text-sm">Loading games catalog...</p>
         </div>
       ) : filteredGames.length === 0 ? (
         <div className="text-center py-24 text-zinc-500">
           <Gamepad2 className="w-12 h-12 mx-auto mb-3 opacity-40" />
-          <p className="text-base font-medium text-zinc-300">No activities found</p>
+          <p className="text-base font-medium text-zinc-300">No games found</p>
           <p className="text-xs text-zinc-500 mt-1">Try a different search query or category.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-          {filteredGames.map((game) => {
-            const isFav = favorites.includes(game.id);
-            return (
-              <div
-                key={game.id}
-                onClick={() => launchGame(game)}
-                className="group relative bg-[#130f22] border border-white/5 hover:border-purple-500/40 rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-900/20 flex flex-col"
-              >
-                {/* Cover Image Container with Blur-on-hover & Centered Play Button */}
-                <div className="relative w-full aspect-square bg-[#0b0814] overflow-hidden">
-                  <img
-                    src={game.cover}
-                    alt={game.title}
-                    loading="lazy"
-                    className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105 group-hover:blur-sm"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=400&q=80";
-                    }}
-                  />
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+            {displayedGames.map((game) => {
+              const isFav = favorites.includes(game.id);
+              return (
+                <div
+                  key={game.id}
+                  onClick={() => launchGame(game)}
+                  className="group relative bg-[#130f22] border border-white/5 hover:border-purple-500/40 rounded-2xl overflow-hidden cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-purple-900/20 flex flex-col"
+                >
+                  {/* Cover Image Container */}
+                  <div className="relative w-full aspect-square bg-[#0b0814] overflow-hidden">
+                    <img
+                      src={game.cover}
+                      alt={game.title}
+                      loading="lazy"
+                      className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105 group-hover:blur-sm"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src =
+                          "https://images.unsplash.com/photo-1550745165-9bc0b252726f?auto=format&fit=crop&w=400&q=80";
+                      }}
+                    />
 
-                  {/* Dark overlay on hover */}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    {/* Dark overlay on hover */}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                  {/* Centered Glowing Play Button */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
-                    <div className="w-12 h-12 rounded-full bg-purple-600/95 shadow-[0_0_25px_rgba(168,85,247,0.7)] flex items-center justify-center text-white scale-90 group-hover:scale-100 transition-transform duration-300 border border-purple-400">
-                      <Play className="w-5 h-5 ml-0.5 fill-white text-white" />
+                    {/* Centered Glowing Play Button */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none">
+                      <div className="w-12 h-12 rounded-full bg-purple-600/95 shadow-[0_0_25px_rgba(168,85,247,0.7)] flex items-center justify-center text-white scale-90 group-hover:scale-100 transition-transform duration-300 border border-purple-400">
+                        <Play className="w-5 h-5 ml-0.5 fill-white text-white" />
+                      </div>
                     </div>
+
+                    {/* Category Tag */}
+                    <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-[10px] font-semibold text-zinc-300 border border-white/10 z-10">
+                      {game.category}
+                    </span>
+
+                    {/* Favorite Button */}
+                    <button
+                      onClick={(e) => toggleFavorite(game.id, e)}
+                      className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-zinc-400 hover:text-red-400 transition-colors z-10"
+                    >
+                      <Heart
+                        className={`w-4 h-4 ${
+                          isFav ? "fill-red-500 text-red-500" : ""
+                        }`}
+                      />
+                    </button>
                   </div>
 
-                  {/* Category Tag */}
-                  <span className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md text-[10px] font-semibold text-zinc-300 border border-white/10 z-10">
-                    {game.category}
-                  </span>
-
-                  {/* Favorite Button */}
-                  <button
-                    onClick={(e) => toggleFavorite(game.id, e)}
-                    className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/50 backdrop-blur-md flex items-center justify-center text-zinc-400 hover:text-red-400 transition-colors z-10"
-                  >
-                    <Heart
-                      className={`w-4 h-4 ${
-                        isFav ? "fill-red-500 text-red-500" : ""
-                      }`}
-                    />
-                  </button>
+                  {/* Info Container */}
+                  <div className="p-3 flex flex-col flex-1 justify-center">
+                    <h3 className="text-xs sm:text-sm font-semibold text-zinc-200 group-hover:text-purple-300 truncate transition-colors">
+                      {game.title}
+                    </h3>
+                    <p className="text-[11px] text-zinc-500 truncate mt-0.5">
+                      {game.category}
+                    </p>
+                  </div>
                 </div>
+              );
+            })}
+          </div>
 
-                {/* Info Container (Clean, no 'Play Now' button) */}
-                <div className="p-3 flex flex-col flex-1 justify-center">
-                  <h3 className="text-xs sm:text-sm font-semibold text-zinc-200 group-hover:text-purple-300 truncate transition-colors">
-                    {game.title}
-                  </h3>
-                  <p className="text-[11px] text-zinc-500 truncate mt-0.5">
-                    {game.author || "GN Math"}
-                  </p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+          {/* Load More Button */}
+          {hasMore && (
+            <div className="flex justify-center mt-10">
+              <button
+                onClick={() => setVisibleCount((prev) => prev + 60)}
+                className="flex items-center gap-2 px-6 py-2.5 rounded-xl bg-[#161226] hover:bg-purple-600 text-zinc-300 hover:text-white border border-white/10 hover:border-purple-400/40 text-sm font-medium transition-all shadow-md"
+              >
+                <span>Load More Games ({filteredGames.length - visibleCount} remaining)</span>
+                <ChevronDown className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+        </>
       )}
 
-      {/* Full-Window Activity Frame with Custom Matching Top Bar */}
+      {/* Full-Window Game Frame with Custom Header */}
       {activeGame && (
         <div 
           ref={gameContainerRef}
           className="fixed inset-0 z-[100] bg-black flex flex-col w-screen h-screen overflow-hidden animate-in fade-in duration-200"
         >
-          {/* Top Bar - Styled in theme colors (matches screenshot layout with title + author on left, control buttons on right) */}
+          {/* Top Bar */}
           <div className="flex items-center justify-between px-4 sm:px-6 py-3 bg-[#110d22] border-b border-white/10 select-none shrink-0 shadow-lg">
-            {/* Left: Title + Author */}
+            {/* Left: Title + Category */}
             <div className="flex flex-col">
               <div className="flex items-center gap-2">
                 <span className="font-bold text-sm sm:text-base text-white tracking-wide">
@@ -229,16 +272,13 @@ export default function ActivitiesPage() {
                   {activeGame.category}
                 </span>
               </div>
-              <span className="text-[11px] text-zinc-400 font-medium">
-                by {activeGame.author || "GN Math"}
-              </span>
             </div>
 
-            {/* Right: Controls (Reload, Open in New Tab, Fullscreen, Close) */}
+            {/* Right: Controls */}
             <div className="flex items-center gap-1.5 sm:gap-2">
               <button
                 onClick={() => setIframeKey((k) => k + 1)}
-                title="Reload Activity"
+                title="Reload Game"
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-xs font-medium text-zinc-300 hover:text-white border border-white/10 transition-colors"
               >
                 <RotateCw className="w-3.5 h-3.5" />
@@ -279,7 +319,7 @@ export default function ActivitiesPage() {
                   }
                   setActiveGame(null);
                 }}
-                title="Close Activity"
+                title="Close Game"
                 className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-purple-600/30 hover:bg-purple-600 text-xs font-medium text-purple-200 hover:text-white border border-purple-500/40 transition-all shadow-md ml-1"
               >
                 <X className="w-4 h-4" />
@@ -288,7 +328,7 @@ export default function ActivitiesPage() {
             </div>
           </div>
 
-          {/* Full Game / Activity Frame */}
+          {/* Full Game Frame */}
           <div className="flex-1 w-full h-full bg-black relative">
             <iframe
               key={iframeKey}

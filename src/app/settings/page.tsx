@@ -475,7 +475,7 @@ export default function SettingsPage() {
 
         {/* Supporting Open Source Attribution */}
         <div className="pt-2 border-t border-white/5 flex flex-wrap items-center justify-between gap-3 text-[11px] text-zinc-500">
-          <span>Special thanks to GN-Math, TMDB, v86, and OpenLibrary for open-source catalog assets.</span>
+          <span>Special thanks to TMDB, v86, and OpenLibrary for open-source catalog assets.</span>
         </div>
       </div>
     </div>
